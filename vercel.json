@@ -1,0 +1,34 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "functions": {
+    "api/generate.js": {
+      "memory": 256,
+      "maxDuration": 30
+    },
+    "api/transcribe.js": {
+      "memory": 256,
+      "maxDuration": 30
+    },
+    "api/extract-emr.js": {
+      "memory": 512,
+      "maxDuration": 60
+    },
+    "api/plan-shift.js": {
+      "memory": 256,
+      "maxDuration": 30
+    },
+    "api/generate-questions.js": {
+      "memory": 256,
+      "maxDuration": 30
+    }
+  }
+}

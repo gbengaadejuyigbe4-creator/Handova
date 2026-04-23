@@ -1,0 +1,26 @@
+{
+  "name": "Handova",
+  "short_name": "Handova",
+  "description": "AI-Powered Nursing Shift Handover Documentation",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020818",
+  "theme_color": "#14b8a6",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "lang": "en",
+  "dir": "auto"
+}
