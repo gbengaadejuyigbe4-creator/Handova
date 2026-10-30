@@ -47,6 +47,44 @@ export interface EmrExtractResult {
   emrClinicalText: string;  // The filtered clinical text — used in AI note generation
 }
 
+// Vercel rejects request bodies over ~4.5MB, and base64 adds about 33%.
+// Keep uploads under 3MB so they always get through.
+export const MAX_UPLOAD_BYTES = 3 * 1024 * 1024;
+const MAX_UPLOAD_LABEL = "3 MB";
+
+const RESAVE_HINT =
+  "Open the HMS page, press Ctrl+P, set Destination to \u201CSave as PDF\u201D " +
+  "(not \u201CMicrosoft Print to PDF\u201D), then upload the new file.";
+
+/**
+ * \u201CMicrosoft Print to PDF\u201D turns every page into a picture, so the file has
+ * no readable text and is very large. The producer name is stored near the end
+ * of the file, so we only read the last 64KB plus the first 8KB.
+ */
+async function isImageOnlyPrintPdf(file: File): Promise<boolean> {
+  try {
+    const tail = await file.slice(Math.max(0, file.size - 65536)).arrayBuffer();
+    const head = await file.slice(0, 8192).arrayBuffer();
+    const decoder = new TextDecoder("latin1");
+    return /Microsoft: Print To PDF/i.test(decoder.decode(head) + decoder.decode(tail));
+  } catch {
+    return false;
+  }
+}
+
+function explainBadResponse(status: number): string {
+  if (status === 413) {
+    return `This file is too large for the server (limit ${MAX_UPLOAD_LABEL}). ${RESAVE_HINT}`;
+  }
+  if (status === 408 || status === 504) {
+    return "The server took too long to respond. Please try again. If it keeps happening, upload a shorter PDF.";
+  }
+  if (status >= 500) {
+    return `The server had a problem (error ${status}). Please try again in a moment.`;
+  }
+  return `Unexpected response from server (code ${status}). Please try again.`;
+}
+
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -66,8 +104,20 @@ export async function extractFromEmrPdf(file: File): Promise<EmrExtractResult> {
     throw new Error("Please upload a PDF file. Image uploads are not supported for EMR extraction.");
   }
 
-  if (file.size > 20 * 1024 * 1024) {
-    throw new Error("File too large. Please upload a PDF under 20MB.");
+  if (await isImageOnlyPrintPdf(file)) {
+    throw new Error(
+      "This PDF was saved with \u201CMicrosoft Print to PDF\u201D, which turns the pages into pictures the app cannot read. " +
+        RESAVE_HINT
+    );
+  }
+
+  if (file.size > MAX_UPLOAD_BYTES) {
+    const mb = (file.size / (1024 * 1024)).toFixed(1);
+    throw new Error(
+      `This PDF is ${mb} MB, which is too large (limit ${MAX_UPLOAD_LABEL}). ` +
+        "Very large PDFs are usually saved with \u201CMicrosoft Print to PDF\u201D. " +
+        RESAVE_HINT
+    );
   }
 
   const base64Data = await fileToBase64(file);
@@ -87,7 +137,7 @@ export async function extractFromEmrPdf(file: File): Promise<EmrExtractResult> {
   try {
     data = await response.json() as Record<string, unknown>;
   } catch {
-    throw new Error("Unexpected response from server. Please try again.");
+    throw new Error(explainBadResponse(response.status));
   }
 
   if (!response.ok) {
@@ -156,8 +206,8 @@ export async function extractFromImages(files: File[]): Promise<EmrExtractResult
       if (!file.type.startsWith("image/")) {
         throw new Error("Only image files are allowed in this mode.");
       }
-      if (file.size > 20 * 1024 * 1024) {
-        throw new Error("A file is too large. Images must be under 20MB.");
+      if (file.size > MAX_UPLOAD_BYTES) {
+        throw new Error(`An image is too large (limit ${MAX_UPLOAD_LABEL}). Please use a smaller photo.`);
       }
       return {
         data: await fileToBase64(file),
@@ -167,8 +217,8 @@ export async function extractFromImages(files: File[]): Promise<EmrExtractResult
   );
 
   const totalSize = documents.reduce((acc, doc) => acc + doc.data.length, 0);
-  if (totalSize > 28 * 1024 * 1024) {
-    throw new Error("Total upload size too large. Please upload fewer images.");
+  if (totalSize > Math.ceil(MAX_UPLOAD_BYTES * 1.4)) {
+    throw new Error(`Total upload is too large (limit ${MAX_UPLOAD_LABEL} in all). Please upload fewer or smaller images.`);
   }
 
   const response = await fetch("/api/extract-emr", {
@@ -181,7 +231,7 @@ export async function extractFromImages(files: File[]): Promise<EmrExtractResult
   try {
     data = await response.json() as Record<string, unknown>;
   } catch {
-    throw new Error("Unexpected response from server. Please try again.");
+    throw new Error(explainBadResponse(response.status));
   }
 
   if (!response.ok) {
@@ -255,7 +305,7 @@ export async function extractFromText(rawText: string): Promise<EmrExtractResult
   try {
     data = await response.json() as Record<string, unknown>;
   } catch {
-    throw new Error("Unexpected response from server. Please try again.");
+    throw new Error(explainBadResponse(response.status));
   }
 
   if (!response.ok) {

@@ -998,7 +998,7 @@ function PatientCard({
               <FileUp size={20} className={isDragging ? "text-indigo-500" : "text-slate-400"} />
               <div className="text-center">
                 <p className="text-xs font-semibold text-slate-600">Drop patient HMS PDF or tap to browse</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">Medikal HMS export — up to 20MB</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Medikal HMS export — up to 3MB. Use Chrome “Save as PDF”</p>
               </div>
             </div>
           )}

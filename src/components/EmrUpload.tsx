@@ -387,7 +387,7 @@ export default function EmrUpload({
                   {isDragging ? "Drop to upload" : "Drop EMR PDF here or tap to browse"}
                 </p>
                 <p className="text-[10px] text-slate-400 mt-0.5">
-                  Medikal HMS exports, patient history PDFs — up to 20MB
+                  Medikal HMS exports — up to 3MB. Use Chrome “Save as PDF”
                 </p>
               </div>
             </div>

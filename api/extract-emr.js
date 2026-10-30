@@ -367,9 +367,9 @@ OUTPUT valid JSON only — no markdown, no preamble, no thinking block:
   }
 
   const totalSize = docs.reduce((acc, d) => acc + (d.data?.length || 0), 0);
-  if (totalSize > 28 * 1024 * 1024) {
+  if (totalSize > 4.2 * 1024 * 1024) {
     res.writeHead(400, { "Content-Type": "application/json", ...corsHeaders });
-    res.end(JSON.stringify({ error: "Total file size too large. Maximum 20MB." }));
+    res.end(JSON.stringify({ error: "Total file size too large. Maximum 3MB. Please re-save the PDF using Save as PDF." }));
     return;
   }
 
@@ -414,7 +414,7 @@ OUTPUT valid JSON only — no markdown, no preamble, no thinking block:
     }
 
     if (!rawText || rawText.trim().length < 50) {
-      throw new Error("Could not extract text from this document. Please ensure it is readable and contains clinical data.");
+      throw new Error("No readable text found in this PDF. If it was saved with \u201CMicrosoft Print to PDF\u201D, re-save it using Chrome\u2019s \u201CSave as PDF\u201D and try again.");
     }
 
     console.log(`[Handova EMR v12.5] ${rawText.length} chars extracted — running full clinical scan`);
