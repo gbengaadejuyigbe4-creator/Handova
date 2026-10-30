@@ -121,17 +121,37 @@ describe("gemini() model rotation", () => {
     expect(calls).toHaveLength(1);
   });
 
-  it("retries after an empty reply and reports a clear error if every attempt is empty", async () => {
-    const { calls } = mockGroq({}, ok(""));
+  it("moves to the next model after an empty reply", async () => {
+    const { calls } = mockGroq({ "openai/gpt-oss-120b": ok("") }, ok("second"));
     const { gemini } = await loadGroq();
-    await expect(gemini("hi", { maxOutputTokens: 2000 })).rejects.toThrow(/Empty response/);
-    expect(calls.length).toBeGreaterThan(1);
+    await expect(gemini("hi", { maxOutputTokens: 2000 })).resolves.toBe("second");
+    expect(calls.map((c) => c.model)).toEqual(["openai/gpt-oss-120b", "qwen/qwen3.6-27b"]);
   });
 
-  // Found by writing these tests: after an empty reply the helper retries the SAME model
-  // instead of moving to the next one. Reasoning models can return empty text when they
-  // use up their token budget thinking, so rotating would be safer. Not changed in Phase 0.
-  it.todo("moves to the next model after an empty reply");
+  it("skips a model that just returned an empty reply, then tries it again after 30 seconds", async () => {
+    vi.useFakeTimers();
+    const { calls } = mockGroq({ "openai/gpt-oss-120b": ok("") }, ok("fine"));
+    const { gemini } = await loadGroq();
+    await gemini("one", { maxOutputTokens: 2000 });
+    calls.length = 0;
+    await gemini("two", { maxOutputTokens: 2000 });
+    expect(calls.map((c) => c.model)).not.toContain("openai/gpt-oss-120b");
+    vi.advanceTimersByTime(31 * 1000);
+    calls.length = 0;
+    await gemini("three", { maxOutputTokens: 2000 });
+    expect(calls[0].model).toBe("openai/gpt-oss-120b");
+  });
+
+  it("ends with a clear error if every model keeps returning empty replies", async () => {
+    vi.useFakeTimers();
+    mockGroq({}, ok(""));
+    const { gemini } = await loadGroq();
+    const result = gemini("hi", { maxOutputTokens: 2000 }).catch((e) => e);
+    await vi.runAllTimersAsync();
+    const err = await result;
+    expect(err).toBeInstanceOf(Error);
+    expect(err.message).toMatch(/Empty response/);
+  });
 
   it("ends with a clear error when every model is retired", async () => {
     vi.useFakeTimers();

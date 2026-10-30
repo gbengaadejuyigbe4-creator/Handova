@@ -48,6 +48,8 @@ const MODELS = loadModels();
 // Track per-model cooldowns (429s) and dead models (404 / decommissioned)
 const modelCooldowns = new Map();
 const DEAD_MS = 60 * 60 * 1000;
+// A model that returns an empty reply is skipped for a short time and the next one is tried.
+const EMPTY_COOLDOWN_MS = 30 * 1000;
 
 /**
  * Pick the best available model.
@@ -161,6 +163,10 @@ export async function gemini(prompt, { temperature = 0.2, maxOutputTokens = 2000
     const data = await res.json();
     const text = data?.choices?.[0]?.message?.content;
     if (!text) {
+      // Retrying the same model usually gives the same blank reply (reasoning models can
+      // use their whole token budget thinking). Move on to the next model instead.
+      console.log(`[Groq] ${model.id} returned an empty reply — rotating model`);
+      modelCooldowns.set(model.id, Date.now() + EMPTY_COOLDOWN_MS);
       lastError = new Error("Empty response from Groq.");
       continue;
     }
