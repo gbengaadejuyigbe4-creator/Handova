@@ -1,0 +1,22 @@
+name: CI
+
+# Runs the automated tests and a production build on every push and pull request.
+# It reports a green tick or red cross on each commit in GitHub.
+# (Lint is not included yet: it has existing errors that are a separate clean-up.)
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
