@@ -38,12 +38,15 @@ interface ClinicalFlag {
   detail: string;
   severity: "CRITICAL" | "HIGH" | "WATCH";
   action: string;
+  unverifiedNumbers?: string[];
 }
 
 interface FlagsResult {
   flags: ClinicalFlag[];
   overallRisk: "LOW" | "MODERATE" | "HIGH" | "CRITICAL";
   riskSummary: string;
+  aiDraft?: boolean;
+  notice?: string;
 }
 
 interface DrugSafetyFlag {
@@ -323,6 +326,7 @@ function PredictiveFlagsPanel({ flags }: { flags: FlagsResult }) {
           </div>
           <div>
             <span className="text-xs font-bold text-red-800">Predictive Clinical Flags</span>
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 ml-2 uppercase tracking-wider">AI draft</span>
             <span className="text-[11px] text-red-600 ml-2">— {flags.flags.length} flag{flags.flags.length !== 1 ? "s" : ""} detected</span>
           </div>
         </div>
@@ -336,6 +340,9 @@ function PredictiveFlagsPanel({ flags }: { flags: FlagsResult }) {
 
       {expanded && (
         <div className="px-4 pb-4 space-y-3 pt-1">
+          <p className="text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 leading-relaxed">
+            ⚠ {flags.notice || "AI-generated draft. Verify against the patient's chart before acting. Not a validated clinical rule."}
+          </p>
           <p className="text-[11px] text-red-700 italic leading-relaxed">{flags.riskSummary}</p>
           {flags.flags.map((flag, i) => {
             const style = SEVERITY_STYLES[flag.severity] || SEVERITY_STYLES.WATCH;
@@ -355,6 +362,11 @@ function PredictiveFlagsPanel({ flags }: { flags: FlagsResult }) {
                   <Zap size={10} className={`${style.icon} flex-shrink-0 mt-0.5`} />
                   <p className="text-[11px] font-semibold text-slate-700 leading-relaxed">{flag.action}</p>
                 </div>
+                {flag.unverifiedNumbers && flag.unverifiedNumbers.length > 0 && (
+                  <p className="text-[10px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 leading-relaxed">
+                    Figures not found in the record: {flag.unverifiedNumbers.join(", ")}. Verify before relying on this flag.
+                  </p>
+                )}
               </div>
             );
           })}

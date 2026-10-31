@@ -1,11 +1,12 @@
 /**
  * api/predict-flags.js — Handova v12.5
  *
- * Predictive clinical flags via Gemini 2.0 Flash.
+ * Predictive clinical flags (AI draft, generated through the shared LLM helper).
  * Author: Gbenga Adejuyigbe, RN, BNSc
  */
 
 import { gemini, extractJson, corsHeaders, getRealIP, isRateLimited } from "./_groq.js";
+import { normalizeFlagsResult } from "./_flagSafety.js";
 
 function buildFlagsPrompt(extracted, filteredText) {
   const { name, currentDiagnosis, initialDiagnosis, doctorsPlan, medsAdministered, vitals, unreviewedResults, flags, summary } = extracted;
@@ -34,8 +35,12 @@ SEVERITY LEVELS:
 INSTRUCTIONS:
 1. Generate 2 to 5 flags specific to THIS patient's record
 2. If patient is stable with no high-risk features, generate 1-2 WATCH flags only
-3. Each flag must be traceable to something in the patient's record
-4. The "action" field must be specific — exact threshold that triggers escalation
+3. Each flag must be traceable to something in the record. In "detail", say what in the record it is based on. If the record does not mention something, write "not documented in this record" (a missing entry is not proof that it was not done)
+4. NUMBERS: copy every value, dose, unit and result exactly as written in the record. Never convert units or calculate new values. If a value or unit looks inconsistent or implausible, do not repeat it as fact; write "value or unit unclear, verify against the chart"
+5. The "action" field says what to observe or check and who to discuss it with. Phrase it as a consideration ("Consider...", "Discuss with the physician whether..."). Do NOT invent numeric thresholds, escalation triggers or monitoring intervals. Use a number only if it is written in the record or the doctor's plan. Otherwise write "escalate per your unit's protocol"
+6. Never tell the nurse to start, stop, hold or change a medication or dose. You may suggest asking the physician to review it
+7. Do not mention services or equipment that may not exist on the ward (for example rapid response teams, ICU beds or specific infusions). Write "escalate per your unit's protocol" instead
+8. This is a draft for a nurse to check, not an order. Do not use commands such as "must", "immediately administer" or "activate"
 
 OUTPUT valid JSON only, no markdown:
 {
@@ -44,7 +49,7 @@ OUTPUT valid JSON only, no markdown:
       "title": "Short title for the flag",
       "detail": "Full clinical reasoning specific to this patient",
       "severity": "CRITICAL | HIGH | WATCH",
-      "action": "Specific nursing action and escalation threshold"
+      "action": "What to observe or check and who to discuss it with, phrased as a consideration"
     }
   ],
   "overallRisk": "LOW | MODERATE | HIGH | CRITICAL",
@@ -87,7 +92,10 @@ export default async function handler(req, res) {
   try {
     console.log(`[Handova Flags] Generating for IP: ${ip}`);
     const text = await gemini(buildFlagsPrompt(extracted, filteredText), { temperature: 0.1, maxOutputTokens: 2000 });
-    const result = extractJson(text);
+    const parsed = extractJson(text);
+    // Validate the shape, label as an AI draft, and flag figures not found in the record.
+    const recordText = `${JSON.stringify(extracted)}\n${filteredText || ""}`;
+    const result = normalizeFlagsResult(parsed, recordText);
     console.log(`[Handova Flags] Generated ${result?.flags?.length || 0} flags for IP: ${ip}`);
     res.writeHead(200, { "Content-Type": "application/json", ...corsHeaders });
     res.end(JSON.stringify(result));
