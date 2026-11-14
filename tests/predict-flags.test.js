@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import handler from "../api/predict-flags.js";
-import { FLAG_NOTICE, findUngroundedNumbers, normalizeFlagsResult } from "../api/_flagSafety.js";
+import { FLAG_NOTICE, findUngroundedNumbers, normalizeFlagsResult, stripRiskLevelWords } from "../api/_flagSafety.js";
 import { fail, makeReq, makeRes, mockGroq, ok } from "./helpers.js";
 
 // All data below is invented.
@@ -83,6 +83,33 @@ describe("normalizeFlagsResult", () => {
   });
 });
 
+describe("stripRiskLevelWords (summary must not contradict the rating badge)", () => {
+  it("removes the level from the sentence seen on a ward phone", () => {
+    expect(stripRiskLevelWords("The patient is at moderate risk this shift due to early signs of infection."))
+      .toBe("The patient is at risk this shift due to early signs of infection.");
+  });
+
+  it("handles every level, any case, and hyphens", () => {
+    expect(stripRiskLevelWords("Low risk. HIGH RISK of falls. critical-risk event. Moderate Risk of x."))
+      .toBe("risk. RISK of falls. risk event. Risk of x.");
+  });
+
+  it("leaves other text alone", () => {
+    expect(stripRiskLevelWords("Monitor hydration and pain. High blood pressure noted.")).toBe("Monitor hydration and pain. High blood pressure noted.");
+    expect(stripRiskLevelWords("")).toBe("");
+    expect(stripRiskLevelWords(undefined)).toBe("");
+  });
+
+  it("is applied to the summary returned to the app", () => {
+    const r = normalizeFlagsResult(
+      { flags: [{ title: "T", detail: "d", severity: "HIGH", action: "a" }], overallRisk: "HIGH", riskSummary: "The patient is at moderate risk this shift." },
+      ""
+    );
+    expect(r.overallRisk).toBe("HIGH");
+    expect(r.riskSummary).toBe("The patient is at risk this shift.");
+  });
+});
+
 describe("predict-flags handler", () => {
   const body = { extracted: { name: "TEST PATIENT", currentDiagnosis: "Hypertensive emergency", vitals: { bp: "160/90" } }, filteredText: RECORD };
 
@@ -121,6 +148,7 @@ describe("predict-flags handler", () => {
     expect(prompt).toMatch(/Never tell the nurse to start, stop, hold or change a medication/);
     expect(prompt).toMatch(/escalate per your unit's protocol/);
     expect(prompt).not.toMatch(/exact threshold that triggers escalation/);
+    expect(prompt).toMatch(/Do not say whether the overall risk is low, moderate, high or critical/);
   });
 
   it("returns a JSON error when the AI reply is unusable", async () => {

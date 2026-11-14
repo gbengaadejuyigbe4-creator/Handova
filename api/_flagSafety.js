@@ -58,6 +58,19 @@ export function findUngroundedNumbers(text, recordText) {
 }
 
 /**
+ * The app sets the overall risk rating itself (never lower than the worst flag).
+ * If the AI's summary also states a level ("at moderate risk"), it can contradict
+ * the badge. This removes the level word and leaves the rest of the sentence.
+ * It never changes the rating upwards or downwards; it only drops the adjective.
+ */
+export function stripRiskLevelWords(summary) {
+  return String(summary || "")
+    .replace(/\b(?:low|moderate|high|critical)(?:\s+|-)(?=risk\b)/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+/**
  * Validates and tidies the AI's reply. Throws if it is not usable.
  */
 export function normalizeFlagsResult(result, recordText = "") {
@@ -97,7 +110,7 @@ export function normalizeFlagsResult(result, recordText = "") {
   return {
     flags,
     overallRisk,
-    riskSummary: asText(result.riskSummary),
+    riskSummary: stripRiskLevelWords(asText(result.riskSummary)),
     aiDraft: true,
     notice: FLAG_NOTICE,
   };

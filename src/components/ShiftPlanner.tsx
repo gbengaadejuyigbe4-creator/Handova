@@ -320,18 +320,18 @@ function PredictiveFlagsPanel({ flags }: { flags: FlagsResult }) {
         className="w-full flex items-center justify-between px-4 py-3 text-left"
         style={{ background: 'linear-gradient(135deg, #FFF1F2, #FFF8F8)' }}
       >
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-7 h-7 rounded-lg bg-red-100 border border-red-200 flex items-center justify-center flex-shrink-0">
             <TriangleAlert size={13} className="text-red-600" />
           </div>
-          <div>
-            <span className="text-xs font-bold text-red-800">Predictive Clinical Flags</span>
-            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 ml-2 uppercase tracking-wider">AI draft</span>
-            <span className="text-[11px] text-red-600 ml-2">— {flags.flags.length} flag{flags.flags.length !== 1 ? "s" : ""} detected</span>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
+            <span className="text-xs font-bold text-red-800 whitespace-nowrap">Predictive Clinical Flags</span>
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 uppercase tracking-wider whitespace-nowrap">AI draft</span>
+            <span className="text-[11px] text-red-600 whitespace-nowrap">— {flags.flags.length} flag{flags.flags.length !== 1 ? "s" : ""} detected</span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${RISK_COLOURS[flags.overallRisk]}`}>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap ${RISK_COLOURS[flags.overallRisk]}`}>
             {flags.overallRisk} RISK
           </span>
           {expanded ? <ChevronUp size={13} className="text-red-400" /> : <ChevronDown size={13} className="text-red-400" />}
@@ -341,7 +341,8 @@ function PredictiveFlagsPanel({ flags }: { flags: FlagsResult }) {
       {expanded && (
         <div className="px-4 pb-4 space-y-3 pt-1">
           <p className="text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 leading-relaxed">
-            ⚠ {flags.notice || "AI-generated draft. Verify against the patient's chart before acting. Not a validated clinical rule."}
+            <span className="sm:hidden">⚠ AI draft. Verify against the chart before acting. Not a validated rule.</span>
+            <span className="hidden sm:inline">⚠ {flags.notice || "AI-generated draft. Verify against the patient's chart before acting. Not a validated clinical rule."}</span>
           </p>
           <p className="text-[11px] text-red-700 italic leading-relaxed">{flags.riskSummary}</p>
           {flags.flags.map((flag, i) => {

@@ -40,7 +40,8 @@ INSTRUCTIONS:
 5. The "action" field says what to observe or check and who to discuss it with. Phrase it as a consideration ("Consider...", "Discuss with the physician whether..."). Do NOT invent numeric thresholds, escalation triggers or monitoring intervals. Use a number only if it is written in the record or the doctor's plan. Otherwise write "escalate per your unit's protocol"
 6. Never tell the nurse to start, stop, hold or change a medication or dose. You may suggest asking the physician to review it
 7. Do not mention services or equipment that may not exist on the ward (for example rapid response teams, ICU beds or specific infusions). Write "escalate per your unit's protocol" instead
-8. This is a draft for a nurse to check, not an order. Do not use commands such as "must", "immediately administer" or "activate"
+8. In riskSummary, describe the main concerns only. Do not say whether the overall risk is low, moderate, high or critical; the app shows the rating separately
+9. This is a draft for a nurse to check, not an order. Do not use commands such as "must", "immediately administer" or "activate"
 
 OUTPUT valid JSON only, no markdown:
 {
