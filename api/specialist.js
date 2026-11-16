@@ -4,8 +4,9 @@
  * Specialist Perspective pipeline. Builds a numbered snapshot of the extracted record,
  * picks specialty lenses, asks the AI for suggestions, then validates and labels them.
  *
- * Ships switched OFF: it only runs when the environment variable ENABLE_SPECIALIST is
- * "true". It is not connected to any screen that shows real patient data.
+ * On by default. It handles the same patient text the risk-flags route already handles,
+ * and removes the patient's name before the AI call. To switch it off, set the
+ * environment variable ENABLE_SPECIALIST to "false".
  * Output is decision-support suggestions for a clinician. Never an order.
  */
 
@@ -21,8 +22,8 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") { res.writeHead(204, corsHeaders); res.end(); return; }
   if (req.method !== "POST") return send(res, 405, { error: "Method not allowed" });
 
-  if (process.env.ENABLE_SPECIALIST !== "true") {
-    return send(res, 503, { error: "The Specialist pipeline is not enabled." });
+  if (process.env.ENABLE_SPECIALIST === "false") {
+    return send(res, 503, { error: "Specialist perspectives are switched off." });
   }
 
   if (isRateLimited(getRealIP(req), 5, 60000)) {

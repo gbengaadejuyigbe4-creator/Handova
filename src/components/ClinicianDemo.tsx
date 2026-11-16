@@ -22,6 +22,7 @@ import {
   type DemoItem,
   type DemoPatient,
   type DemoPerspective,
+  type FactRef,
   type GapState,
   type NextStep,
   type Urgency,
@@ -61,7 +62,7 @@ const DECISION_LABEL: Record<Decision, string> = {
   rejected: "Rejected (not adopted)",
 };
 
-function Chips({ basis, facts }: { basis: string[]; facts: DemoFact[] }) {
+function Chips({ basis, facts }: { basis: string[]; facts: FactRef[] }) {
   if (basis.length === 0) {
     return <span className="text-[10px] text-slate-400">general medical knowledge</span>;
   }
@@ -80,7 +81,16 @@ function Chips({ basis, facts }: { basis: string[]; facts: DemoFact[] }) {
   );
 }
 
-function ItemList({ title, items, facts, open = false }: { title: string; items: DemoItem[]; facts: DemoFact[]; open?: boolean }) {
+function UnverifiedNote({ figures }: { figures?: string[] }) {
+  if (!figures || figures.length === 0) return null;
+  return (
+    <p className="text-[10px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 leading-relaxed">
+      Figures not found in the record: {figures.join(", ")}. Verify before relying on this.
+    </p>
+  );
+}
+
+function ItemList({ title, items, facts, open = false }: { title: string; items: DemoItem[]; facts: FactRef[]; open?: boolean }) {
   if (items.length === 0) return null;
   return (
     <details open={open} className="rounded-lg border border-slate-200 bg-white">
@@ -90,6 +100,7 @@ function ItemList({ title, items, facts, open = false }: { title: string; items:
           <li key={i} className="text-sm text-slate-800 leading-relaxed">
             <p>{it.text}</p>
             <Chips basis={it.basis} facts={facts} />
+            <UnverifiedNote figures={it.unverifiedNumbers} />
           </li>
         ))}
       </ul>
@@ -97,7 +108,7 @@ function ItemList({ title, items, facts, open = false }: { title: string; items:
   );
 }
 
-function GapCard({ gap, facts }: { gap: DemoGap; facts: DemoFact[] }) {
+function GapCard({ gap, facts }: { gap: DemoGap; facts: FactRef[] }) {
   return (
     <li className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-1.5">
       <div className="flex flex-wrap items-center gap-1.5">
@@ -112,6 +123,7 @@ function GapCard({ gap, facts }: { gap: DemoGap; facts: DemoFact[] }) {
         {gap.needsClinicianDecision ? " (needs a clinician's decision)" : ""}
       </p>
       <Chips basis={gap.basis} facts={facts} />
+      <UnverifiedNote figures={gap.unverifiedNumbers} />
     </li>
   );
 }
@@ -125,8 +137,9 @@ export function PerspectiveCard({
   onUndo,
 }: {
   p: DemoPerspective;
-  facts: DemoFact[];
-  role: Role;
+  facts: FactRef[];
+  /** "viewer" = real patient screen without sign-in: read-only, nothing is recorded. */
+  role: Role | "viewer";
   decision?: DecisionRecord;
   onDecide?: (d: Decision, reason: string) => void;
   onUndo?: () => void;
@@ -198,6 +211,10 @@ export function PerspectiveCard({
             </div>
             <p className="text-[11px] text-slate-500">You may also ignore this suggestion. Nothing here becomes an order or a task.</p>
           </div>
+        ) : role === "viewer" ? (
+          <p className="text-sm text-slate-700">
+            <b>Read-only here.</b> Medical personnel review these suggestions. Recording decisions will come with sign-in.
+          </p>
         ) : (
           <p className="text-sm text-slate-700">
             <b>Awaiting medical review.</b> Nurses can read this suggestion. Medical personnel review it.

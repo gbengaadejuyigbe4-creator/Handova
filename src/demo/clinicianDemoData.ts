@@ -21,7 +21,7 @@ export type GapState =
 export type NextStep = "locate_existing" | "clarify_record" | "complete_ordered" | "consider_new";
 export type Urgency = "urgent" | "soon" | "routine";
 
-export interface DemoItem { text: string; basis: string[] }
+export interface DemoItem { text: string; basis: string[]; grounding?: string; unverifiedNumbers?: string[] }
 
 export interface DemoGap {
   missing: string;
@@ -32,6 +32,8 @@ export interface DemoGap {
   urgency: Urgency;
   needsClinicianDecision: boolean;
   basis: string[];
+  unverifiedNumbers?: string[];
+  downgradedFrom?: string;
 }
 
 export interface DemoPerspective {
@@ -49,6 +51,9 @@ export interface DemoPerspective {
   disclaimer: string;
   reviewStatus: "awaiting_medical_review";
 }
+
+/** The part of a fact the cards need. The real pipeline returns more. */
+export type FactRef = { id: string; label: string; value: string };
 
 export interface DemoFact {
   id: string;

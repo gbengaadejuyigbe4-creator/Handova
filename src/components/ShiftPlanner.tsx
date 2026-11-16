@@ -20,6 +20,7 @@ import {
   TriangleAlert, Eye, Zap, ChevronUp, History,
 } from "lucide-react";
 import { extractFromEmrPdf } from "../utils/emrExtract";
+import SpecialistSection from "./SpecialistSection";
 import { savePlannerEntry, loadPlannerHistory } from "../utils/storage";
 import type { AppSettings } from "../utils/settings";
 
@@ -1156,6 +1157,11 @@ function PatientCard({
           {/* Predictive flags */}
           {patient.flags && !patient.isGeneratingFlags && (
             <PredictiveFlagsPanel flags={patient.flags} />
+          )}
+
+          {/* Specialist perspectives: AI suggestions for a doctor, only when asked */}
+          {patient.extracted && !patient.isExtracting && (
+            <SpecialistSection key={`${patient.id}:${patient.fileName}`} extracted={patient.extracted} />
           )}
 
           {/* Nurse queries */}

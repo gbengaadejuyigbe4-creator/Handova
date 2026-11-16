@@ -324,13 +324,14 @@ describe("specialist handler", () => {
       perspectives: [{ specialty: keyFor(), headline: "h", interpretations: [{ text: "Pulse 96 could suggest strain.", basis: ["F1"] }] }],
     });
 
-  beforeEach(() => { process.env.ENABLE_SPECIALIST = "true"; });
+  beforeEach(() => { delete process.env.ENABLE_SPECIALIST; });
 
-  it("is switched off unless ENABLE_SPECIALIST is true", async () => {
-    delete process.env.ENABLE_SPECIALIST;
+  it("can be switched off with ENABLE_SPECIALIST=false", async () => {
+    process.env.ENABLE_SPECIALIST = "false";
     mockGroq();
     const res = await post(INPUT);
     expect(res.statusCode).toBe(503);
+    expect(res.json.error).toMatch(/switched off/);
   });
 
   it("answers preflight and rejects other methods", async () => {
