@@ -21,6 +21,7 @@ import {
   type DemoGap,
   type DemoItem,
   type DemoPatient,
+  type Coverage,
   type DemoPerspective,
   type FactRef,
   type GapState,
@@ -81,6 +82,29 @@ function Chips({ basis, facts }: { basis: string[]; facts: FactRef[] }) {
   );
 }
 
+const COVERAGE_LABEL: Partial<Record<Coverage, { text: string; style: string }>> = {
+  in_plan: { text: "Already in the documented plan", style: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  partly_in_plan: { text: "Partly in the documented plan", style: "bg-amber-50 text-amber-800 border-amber-200" },
+  not_in_plan: { text: "Not found in the documented plan", style: "bg-indigo-600 text-white border-indigo-700" },
+};
+
+function CoverageBadge({ coverage }: { coverage?: Coverage }) {
+  const c = coverage ? COVERAGE_LABEL[coverage] : undefined;
+  if (!c) return null;
+  return (
+    <span title="Judged from this record only. The plan may exist elsewhere." className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border whitespace-nowrap ${c.style}`}>
+      {c.text}
+    </span>
+  );
+}
+
+/** Counts the suggestions the documented plan does not cover. */
+export function countNotInPlan(p: DemoPerspective): number {
+  if (typeof p.notInPlanCount === "number") return p.notInPlanCount;
+  const items = [...p.monitoring, ...p.management, ...p.escalation];
+  return [...items, ...p.evidenceGaps].filter((x) => x.coverage === "not_in_plan").length;
+}
+
 function UnverifiedNote({ figures }: { figures?: string[] }) {
   if (!figures || figures.length === 0) return null;
   return (
@@ -98,6 +122,7 @@ function ItemList({ title, items, facts, open = false }: { title: string; items:
       <ul className="px-3 pb-3 space-y-2">
         {items.map((it, i) => (
           <li key={i} className="text-sm text-slate-800 leading-relaxed">
+            <CoverageBadge coverage={it.coverage} />
             <p>{it.text}</p>
             <Chips basis={it.basis} facts={facts} />
             <UnverifiedNote figures={it.unverifiedNumbers} />
@@ -115,6 +140,7 @@ function GapCard({ gap, facts }: { gap: DemoGap; facts: FactRef[] }) {
         <span className="text-sm font-semibold text-slate-800">{gap.missing}</span>
         <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white border border-slate-300 text-slate-700">{GAP_LABEL[gap.state]}</span>
         <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${URGENCY_STYLE[gap.urgency]}`}>{gap.urgency}</span>
+        <CoverageBadge coverage={gap.coverage} />
       </div>
       <p className="text-xs text-slate-700"><b>Why it may matter:</b> {gap.why}</p>
       <p className="text-xs text-slate-700"><b>Limits interpretation:</b> {gap.limitation}</p>
@@ -156,11 +182,22 @@ export function PerspectiveCard({
           </span>
         </div>
         <h3 className="text-base font-semibold text-slate-900 leading-snug">{p.headline}</h3>
+        {countNotInPlan(p) > 0 && (
+          <p className="text-[11px] font-semibold text-indigo-700">
+            {countNotInPlan(p)} suggestion{countNotInPlan(p) === 1 ? "" : "s"} not found in the documented plan
+          </p>
+        )}
       </header>
 
       <div role="note" data-testid="disclaimer" className="text-[11px] font-medium text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 leading-relaxed">
         {p.disclaimer}
       </div>
+
+      {[...p.monitoring, ...p.management, ...p.escalation, ...p.evidenceGaps].some((x) => x.coverage && x.coverage !== "unknown") && (
+        <p className="text-[10px] text-slate-500 leading-relaxed">
+          Plan status is judged from this record only. “Not found” does not mean “not planned”: the plan may exist elsewhere.
+        </p>
+      )}
 
       <ItemList title="What the record could suggest" items={p.interpretations} facts={facts} open />
 

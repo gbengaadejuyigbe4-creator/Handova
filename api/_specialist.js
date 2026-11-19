@@ -43,6 +43,10 @@ export const GAP_STATES = [
 export const NEXT_STEPS = ["locate_existing", "clarify_record", "complete_ordered", "consider_new"];
 export const URGENCIES = ["urgent", "soon", "routine"];
 
+// Is a suggestion already covered by what the doctor has documented?
+export const COVERAGE = ["in_plan", "partly_in_plan", "not_in_plan", "unknown"];
+const COVERAGE_RANK = { not_in_plan: 0, partly_in_plan: 1, unknown: 2, in_plan: 3 };
+
 const MAX_PERSPECTIVES = 3;
 const MAX_ITEMS = 5;
 const MAX_GAPS = 4;
@@ -110,8 +114,14 @@ export function buildSnapshot(input = {}) {
     .map((text, i) => ({ id: `R${i + 1}`, text: text.slice(0, MAX_LINE_CHARS) }));
 
   const ids = new Set([...facts.map((f) => f.id), ...lines.map((l) => l.id)]);
+  // Only these can show that something is already covered: the doctor's plan, the
+  // medications recorded, and the record text itself. A vital sign cannot.
+  const coverageIds = new Set([
+    ...facts.filter((f) => f.label === "Doctor's plan" || f.label === "Medications recorded").map((f) => f.id),
+    ...lines.map((l) => l.id),
+  ]);
   const recordText = [...facts.map((f) => f.value), ...lines.map((l) => l.text)].join("\n");
-  return { facts, lines, ids, recordText };
+  return { facts, lines, ids, coverageIds, recordText };
 }
 
 // ---------------------------------------------------------------------------------
@@ -190,6 +200,12 @@ RULES:
    - not_ordered_consider: not ordered, and may be worth the doctor considering
    Do not suggest repeating a test only because its result is missing from the export. Do not assume an old result is current
 10. At most ${MAX_ITEMS} items per list. Keep each item to one or two sentences
+11. COVERAGE: for every monitoring, management and escalation item, and every evidence gap, add "coverage", exactly one of:
+   - in_plan: the doctor's plan or a recorded medication already covers it. You MUST cite the plan fact or record line in "basis"
+   - partly_in_plan: partly covered. You MUST cite what covers it in "basis"
+   - not_in_plan: nothing in the plan or record covers it. This is the most useful kind: it is what the team may not yet be thinking about
+   - unknown: you cannot tell
+   Never claim in_plan or partly_in_plan without citing. The plan may exist outside this export, so "not_in_plan" means "not found in this record", not "not planned"
 
 OUTPUT: valid JSON only, no markdown, in exactly this shape:
 {
@@ -208,11 +224,12 @@ OUTPUT: valid JSON only, no markdown, in exactly this shape:
         "nextStep": "locate_existing | clarify_record | complete_ordered | consider_new",
         "urgency": "urgent | soon | routine",
         "needsClinicianDecision": true,
+        "coverage": "not_in_plan | partly_in_plan | in_plan | unknown",
         "basis": []
       }],
-      "monitoring": [{"text": "...", "basis": []}],
-      "management": [{"text": "...", "basis": []}],
-      "escalation": [{"text": "...", "basis": []}],
+      "monitoring": [{"text": "...", "basis": [], "coverage": "not_in_plan"}],
+      "management": [{"text": "...", "basis": [], "coverage": "unknown"}],
+      "escalation": [{"text": "...", "basis": [], "coverage": "unknown"}],
       "limitations": ["..."]
     }
   ]
@@ -248,7 +265,19 @@ function cleanBasis(basis, ids, counters) {
   return kept;
 }
 
-function cleanItems(list, ids, recordText, counters) {
+/** A claim of coverage must cite the plan, the medications or the record text. */
+function resolveCoverage(raw, basis, coverageIds, counters) {
+  const asked = clean(raw?.coverage);
+  let value = COVERAGE.includes(asked) ? asked : "unknown";
+  if ((value === "in_plan" || value === "partly_in_plan") && !basis.some((b) => coverageIds.has(b))) {
+    value = "unknown";
+    counters.coverageDowngraded += 1;
+  }
+  return value;
+}
+
+function cleanItems(list, snapshot, counters, withCoverage = false) {
+  const { ids, recordText, coverageIds } = snapshot;
   const out = [];
   for (const raw of asArray(list)) {
     const text = clean(typeof raw === "string" ? raw : raw?.text);
@@ -256,15 +285,18 @@ function cleanItems(list, ids, recordText, counters) {
     if (isOrderLikeWording(text)) { counters.orderLikeItems += 1; continue; }
     const basis = cleanBasis(typeof raw === "object" ? raw?.basis : [], ids, counters);
     const item = { text, basis, grounding: basis.length > 0 ? "record" : "general_knowledge" };
+    if (withCoverage) item.coverage = resolveCoverage(typeof raw === "object" ? raw : {}, basis, coverageIds, counters);
     const unverified = findUngroundedNumbers(text, recordText);
     if (unverified.length > 0) item.unverifiedNumbers = unverified;
     out.push(item);
     if (out.length >= MAX_ITEMS) break;
   }
-  return out;
+  // Suggestions the plan does not cover come first.
+  return withCoverage ? out.sort((a, b) => COVERAGE_RANK[a.coverage] - COVERAGE_RANK[b.coverage]) : out;
 }
 
-function cleanGaps(list, ids, recordText, counters) {
+function cleanGaps(list, snapshot, counters) {
+  const { ids, recordText, coverageIds } = snapshot;
   const rank = { urgent: 0, soon: 1, routine: 2 };
   const out = [];
   for (const raw of asArray(list)) {
@@ -286,6 +318,7 @@ function cleanGaps(list, ids, recordText, counters) {
       urgency: URGENCIES.includes(clean(raw.urgency)) ? clean(raw.urgency) : "routine",
       needsClinicianDecision: raw.needsClinicianDecision !== false,
       basis,
+      coverage: resolveCoverage(raw, basis, coverageIds, counters),
     };
     // A result cannot be "available" unless the record actually contains something to point to.
     if (gap.state === "completed_available" && basis.length === 0) {
@@ -296,7 +329,9 @@ function cleanGaps(list, ids, recordText, counters) {
     if (unverified.length > 0) gap.unverifiedNumbers = unverified;
     out.push(gap);
   }
-  return out.sort((a, b) => rank[a.urgency] - rank[b.urgency]).slice(0, MAX_GAPS);
+  return out
+    .sort((a, b) => rank[a.urgency] - rank[b.urgency] || COVERAGE_RANK[a.coverage] - COVERAGE_RANK[b.coverage])
+    .slice(0, MAX_GAPS);
 }
 
 /**
@@ -308,7 +343,7 @@ export function normalizeSpecialistResult(raw, snapshot, lenses, now = new Date(
     throw new Error("AI returned perspectives in an unexpected format.");
   }
 
-  const counters = { invalidCitations: 0, orderLikeItems: 0, invalidGaps: 0, droppedPerspectives: 0 };
+  const counters = { invalidCitations: 0, orderLikeItems: 0, invalidGaps: 0, droppedPerspectives: 0, coverageDowngraded: 0 };
   const allowed = new Map(lenses.map((l) => [l.key, l]));
   const seen = new Set();
   const perspectives = [];
@@ -318,13 +353,13 @@ export function normalizeSpecialistResult(raw, snapshot, lenses, now = new Date(
     if (!lens || seen.has(lens.key)) { counters.droppedPerspectives += 1; continue; }
 
     const sections = {
-      interpretations: cleanItems(p.interpretations, snapshot.ids, snapshot.recordText, counters),
-      differentials: cleanItems(p.differentials, snapshot.ids, snapshot.recordText, counters),
-      risks: cleanItems(p.risks, snapshot.ids, snapshot.recordText, counters),
-      evidenceGaps: cleanGaps(p.evidenceGaps, snapshot.ids, snapshot.recordText, counters),
-      monitoring: cleanItems(p.monitoring, snapshot.ids, snapshot.recordText, counters),
-      management: cleanItems(p.management, snapshot.ids, snapshot.recordText, counters),
-      escalation: cleanItems(p.escalation, snapshot.ids, snapshot.recordText, counters),
+      interpretations: cleanItems(p.interpretations, snapshot, counters),
+      differentials: cleanItems(p.differentials, snapshot, counters),
+      risks: cleanItems(p.risks, snapshot, counters),
+      evidenceGaps: cleanGaps(p.evidenceGaps, snapshot, counters),
+      monitoring: cleanItems(p.monitoring, snapshot, counters, true),
+      management: cleanItems(p.management, snapshot, counters, true),
+      escalation: cleanItems(p.escalation, snapshot, counters, true),
     };
     const hasContent = Object.values(sections).some((s) => s.length > 0);
     if (!hasContent) { counters.droppedPerspectives += 1; continue; }
@@ -335,6 +370,9 @@ export function normalizeSpecialistResult(raw, snapshot, lenses, now = new Date(
     const limitations = asArray(p.limitations).map(clean).filter(Boolean).slice(0, 3);
     limitations.push("Based only on the information in this export. Other records may exist.");
 
+    const actionable = [...sections.monitoring, ...sections.management, ...sections.escalation, ...sections.evidenceGaps];
+    const notInPlan = actionable.filter((x) => x.coverage === "not_in_plan").length;
+
     seen.add(lens.key);
     perspectives.push({
       id: `P${perspectives.length + 1}`,
@@ -344,6 +382,7 @@ export function normalizeSpecialistResult(raw, snapshot, lenses, now = new Date(
       ...sections,
       limitations,
       citedFactIds: [...cited],
+      notInPlanCount: notInPlan,
       // Set here, never taken from the AI:
       label: "AI-generated suggestion",
       disclaimer: SPECIALIST_DISCLAIMER,

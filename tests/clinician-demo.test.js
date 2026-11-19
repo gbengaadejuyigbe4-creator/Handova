@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
 import ClinicianDemo, { PerspectiveCard } from "../src/components/ClinicianDemo.tsx";
 import { DEMO_DISCLAIMER, DEMO_PATIENTS } from "../src/demo/clinicianDemoData.ts";
-import { GAP_STATES, SPECIALIST_DISCLAIMER, isOrderLikeWording } from "../api/_specialist.js";
+import { COVERAGE, GAP_STATES, SPECIALIST_DISCLAIMER, isOrderLikeWording } from "../api/_specialist.js";
 
 const allPerspectives = DEMO_PATIENTS.flatMap((p) => p.perspectives.map((x) => ({ patient: p, p: x })));
 const itemsOf = (p) => [p.interpretations, p.differentials, p.risks, p.monitoring, p.management, p.escalation].flat();
@@ -40,6 +40,24 @@ describe("clinician demo data", () => {
         for (const t of [g.missing, g.why, g.limitation]) expect(isOrderLikeWording(t), t).toBe(false);
       }
     }
+  });
+
+  it("uses only defined coverage values, and claims coverage only with the plan or medications as evidence", () => {
+    for (const { patient, p } of allPerspectives) {
+      const proof = new Set(patient.facts.filter((f) => f.label === "Doctor's plan" || f.label === "Medications recorded").map((f) => f.id));
+      for (const x of [...p.monitoring, ...p.management, ...p.escalation, ...p.evidenceGaps]) {
+        if (!x.coverage) continue;
+        expect(COVERAGE).toContain(x.coverage);
+        if (x.coverage === "in_plan" || x.coverage === "partly_in_plan") {
+          expect(x.basis.some((b) => proof.has(b)), `${patient.label}: ${x.text || x.missing}`).toBe(true);
+        }
+      }
+    }
+  });
+
+  it("shows each coverage kind somewhere in the demo", () => {
+    const used = new Set(allPerspectives.flatMap(({ p }) => [...p.monitoring, ...p.management, ...p.escalation, ...p.evidenceGaps].map((x) => x.coverage)));
+    for (const c of ["in_plan", "partly_in_plan", "not_in_plan"]) expect(used.has(c), c).toBe(true);
   });
 
   it("is clearly fake", () => {
@@ -84,6 +102,26 @@ describe("PerspectiveCard", () => {
     const html = render({ role: "nurse", decision: { decision: "rejected", reason: "Not relevant" } });
     expect(html).toContain("Rejected (not adopted)");
     expect(html).not.toMatch(/>Undo</);
+  });
+
+  it("shows plan-coverage badges and the count of suggestions not found in the plan", () => {
+    const withNew = allPerspectives.find(({ p }) => [...p.monitoring, ...p.management, ...p.escalation, ...p.evidenceGaps].some((x) => x.coverage === "not_in_plan"));
+    const html = renderToStaticMarkup(createElement(PerspectiveCard, { p: withNew.p, facts: withNew.patient.facts, role: "doctor" }));
+    expect(html).toContain("Not found in the documented plan");
+    expect(html).toMatch(/\d+ suggestions? not found in the documented plan/);
+    expect(html).toContain("does not mean");
+  });
+
+  it("shows the already-covered badge for items the plan covers", () => {
+    const covered = allPerspectives.find(({ p }) => p.evidenceGaps.some((g) => g.coverage === "in_plan"));
+    const html = renderToStaticMarkup(createElement(PerspectiveCard, { p: covered.p, facts: covered.patient.facts, role: "nurse" }));
+    expect(html).toContain("Already in the documented plan");
+  });
+
+  it("shows no badge for items whose coverage is unknown", () => {
+    const p = { ...allPerspectives[0].p, monitoring: [{ text: "Consider X", basis: [], coverage: "unknown" }], management: [], escalation: [], evidenceGaps: [] };
+    const html = renderToStaticMarkup(createElement(PerspectiveCard, { p, facts: allPerspectives[0].patient.facts, role: "doctor" }));
+    expect(html).not.toContain("documented plan");
   });
 
   it("never mentions orders or tasks being created", () => {

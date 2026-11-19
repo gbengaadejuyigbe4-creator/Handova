@@ -18,10 +18,12 @@ export type GapState =
   | "possibly_elsewhere"
   | "not_ordered_consider";
 
+export type Coverage = "in_plan" | "partly_in_plan" | "not_in_plan" | "unknown";
+
 export type NextStep = "locate_existing" | "clarify_record" | "complete_ordered" | "consider_new";
 export type Urgency = "urgent" | "soon" | "routine";
 
-export interface DemoItem { text: string; basis: string[]; grounding?: string; unverifiedNumbers?: string[] }
+export interface DemoItem { text: string; basis: string[]; grounding?: string; unverifiedNumbers?: string[]; coverage?: Coverage }
 
 export interface DemoGap {
   missing: string;
@@ -34,6 +36,7 @@ export interface DemoGap {
   basis: string[];
   unverifiedNumbers?: string[];
   downgradedFrom?: string;
+  coverage?: Coverage;
 }
 
 export interface DemoPerspective {
@@ -50,6 +53,7 @@ export interface DemoPerspective {
   limitations: string[];
   disclaimer: string;
   reviewStatus: "awaiting_medical_review";
+  notInPlanCount?: number;
 }
 
 /** The part of a fact the cards need. The real pipeline returns more. */
@@ -103,6 +107,7 @@ export const DEMO_PATIENTS: DemoPatient[] = [
       { id: "F10", label: "PCV", value: "22% on admission", source: "HMS export", time: "Day 1 06:45", verification: "unverified" },
       { id: "F11", label: "Malaria parasite count", value: "Sample sent, result pending", source: "HMS export", time: "Day 1 07:15", verification: "unverified" },
       { id: "F12", label: "Urea and creatinine", value: "Ordered, not yet done", source: "HMS export", time: "Day 1 07:30", verification: "unverified" },
+      { id: "F13", label: "Doctor's plan", value: "Complete the IV artesunate course; urea and creatinine; vitals every 4 hours; review tomorrow", source: "HMS export", time: "Day 1 07:30", verification: "unverified" },
     ],
     perspectives: [
       {
@@ -119,16 +124,16 @@ export const DEMO_PATIENTS: DemoPatient[] = [
           { text: "Severe malaria can involve kidney injury, low blood sugar and worsening anaemia.", basis: [] },
         ],
         evidenceGaps: [
-          { missing: "Urea and creatinine", state: "ordered_not_completed", why: "Kidney involvement is a recognised complication of severe malaria.", limitation: "Kidney function is currently unknown.", nextStep: "complete_ordered", urgency: "soon", needsClinicianDecision: false, basis: ["F12"] },
-          { missing: "Urine output record", state: "not_documented", why: "Reduced urine output can be an early sign of kidney involvement.", limitation: "Fluid balance and kidney function cannot be judged from output.", nextStep: "clarify_record", urgency: "soon", needsClinicianDecision: true, basis: [] },
+          { missing: "Urea and creatinine", state: "ordered_not_completed", why: "Kidney involvement is a recognised complication of severe malaria.", limitation: "Kidney function is currently unknown.", nextStep: "complete_ordered", urgency: "soon", needsClinicianDecision: false, basis: ["F12", "F13"], coverage: "in_plan" },
+          { missing: "Urine output record", state: "not_documented", why: "Reduced urine output can be an early sign of kidney involvement.", limitation: "Fluid balance and kidney function cannot be judged from output.", nextStep: "clarify_record", urgency: "soon", needsClinicianDecision: true, basis: [], coverage: "not_in_plan" },
           { missing: "Parasite count result", state: "completed_pending", why: "Shows the burden of infection and how quickly it is falling.", limitation: "Treatment response cannot be judged without it.", nextStep: "locate_existing", urgency: "routine", needsClinicianDecision: false, basis: ["F11"] },
         ],
         monitoring: [
-          { text: "Blood glucose checks may be worth considering during treatment. The last value in the record is 4.1 mmol/L.", basis: ["F9"] },
+          { text: "Blood glucose checks may be worth considering during treatment. The last value in the record is 4.1 mmol/L.", basis: ["F9"], coverage: "not_in_plan" },
         ],
         management: none,
         escalation: [
-          { text: "If fever and pulse do not settle as treatment continues, the doctor may want to be told.", basis: ["F6", "F7"] },
+          { text: "If fever and pulse do not settle as treatment continues, the doctor may want to be told.", basis: ["F6", "F7", "F13"], coverage: "partly_in_plan" },
         ],
         limitations: ["Single time point; the trend is unknown.", LIMIT],
         disclaimer: DEMO_DISCLAIMER,
@@ -146,11 +151,11 @@ export const DEMO_PATIENTS: DemoPatient[] = [
           { text: "Anaemia can worsen during treatment of severe malaria.", basis: [] },
         ],
         evidenceGaps: [
-          { missing: "Repeat PCV or haemoglobin", state: "not_documented", why: "Shows whether the anaemia is stable or worsening.", limitation: "The direction of change is unknown.", nextStep: "clarify_record", urgency: "soon", needsClinicianDecision: true, basis: ["F10"] },
+          { missing: "Repeat PCV or haemoglobin", state: "not_documented", why: "Shows whether the anaemia is stable or worsening.", limitation: "The direction of change is unknown.", nextStep: "clarify_record", urgency: "soon", needsClinicianDecision: true, basis: ["F10"], coverage: "not_in_plan" },
         ],
         monitoring: none,
         management: [
-          { text: "Whether transfusion is indicated is a clinical decision for the doctor. A documented plan would help the nursing team.", basis: ["F10"] },
+          { text: "Whether transfusion is indicated is a clinical decision for the doctor. A documented plan would help the nursing team.", basis: ["F10"], coverage: "not_in_plan" },
         ],
         escalation: none,
         limitations: [LIMIT],
@@ -182,6 +187,7 @@ export const DEMO_PATIENTS: DemoPatient[] = [
       { id: "F10", label: "Potassium", value: "5.4 mmol/L (day 1)", source: "HMS export", time: "Day 1 14:00", verification: "unverified" },
       { id: "F11", label: "Intake and output chart", value: "Requested; no totals documented", source: "HMS export", time: "Day 1", verification: "unverified" },
       { id: "F12", label: "Echocardiogram", value: "No report in this export", source: "HMS export", time: "Day 2", verification: "unverified" },
+      { id: "F13", label: "Doctor's plan", value: "Strict intake and output chart; continue IV furosemide; review in 24 hours", source: "HMS export", time: "Day 2 07:00", verification: "unverified" },
     ],
     perspectives: [
       {
@@ -198,11 +204,11 @@ export const DEMO_PATIENTS: DemoPatient[] = [
           { text: "A diuretic together with spironolactone can affect potassium and kidney function.", basis: ["F4"] },
         ],
         evidenceGaps: [
-          { missing: "Urine output totals", state: "not_documented", why: "Shows whether the diuretic is working.", limitation: "Response to treatment cannot be judged.", nextStep: "clarify_record", urgency: "soon", needsClinicianDecision: true, basis: ["F11"] },
+          { missing: "Urine output totals", state: "not_documented", why: "Shows whether the diuretic is working.", limitation: "Response to treatment cannot be judged.", nextStep: "clarify_record", urgency: "soon", needsClinicianDecision: true, basis: ["F11", "F13"], coverage: "partly_in_plan" },
           { missing: "Echocardiogram report", state: "possibly_elsewhere", why: "Shows heart function and valve disease.", limitation: "Cause and severity cannot be judged from this record alone.", nextStep: "locate_existing", urgency: "routine", needsClinicianDecision: false, basis: ["F12"] },
         ],
         monitoring: [
-          { text: "Daily weights are one way to track fluid balance, if available on the ward.", basis: [] },
+          { text: "Daily weights are one way to track fluid balance, if available on the ward.", basis: [], coverage: "not_in_plan" },
         ],
         management: none,
         escalation: none,
@@ -220,8 +226,8 @@ export const DEMO_PATIENTS: DemoPatient[] = [
         differentials: none,
         risks: none,
         evidenceGaps: [
-          { missing: "Trend in creatinine and potassium", state: "completed_available", why: "A single value cannot show whether kidney function is improving or worsening.", limitation: "Only day 1 results are in the record.", nextStep: "consider_new", urgency: "soon", needsClinicianDecision: true, basis: ["F9", "F10"] },
-          { missing: "Repeat creatinine and potassium", state: "not_ordered_consider", why: "Potassium may rise on spironolactone when kidney function is reduced.", limitation: "No follow-up result is planned in the record.", nextStep: "consider_new", urgency: "soon", needsClinicianDecision: true, basis: ["F4"] },
+          { missing: "Trend in creatinine and potassium", state: "completed_available", why: "A single value cannot show whether kidney function is improving or worsening.", limitation: "Only day 1 results are in the record.", nextStep: "consider_new", urgency: "soon", needsClinicianDecision: true, basis: ["F9", "F10"], coverage: "not_in_plan" },
+          { missing: "Repeat creatinine and potassium", state: "not_ordered_consider", why: "Potassium may rise on spironolactone when kidney function is reduced.", limitation: "No follow-up result is planned in the record.", nextStep: "consider_new", urgency: "soon", needsClinicianDecision: true, basis: ["F4"], coverage: "not_in_plan" },
         ],
         monitoring: none,
         management: none,
@@ -254,6 +260,7 @@ export const DEMO_PATIENTS: DemoPatient[] = [
       { id: "F7", label: "SpO2", value: "97%", source: "Nurse entry", time: "Day 1 11:00", verification: "nurse_verified" },
       { id: "F8", label: "Nurse note", value: "Melaena for 2 days; second episode this morning", source: "Nurse entry", time: "Day 1 10:30", verification: "nurse_verified" },
       { id: "F9", label: "Haemoglobin", value: "Not in this export", source: "HMS export", time: "Day 1", verification: "unverified" },
+      { id: "F10", label: "Doctor's plan", value: "IV omeprazole; nil by mouth; strict observation; review on ward round", source: "HMS export", time: "Day 1 09:30", verification: "unverified" },
     ],
     perspectives: [
       {
@@ -270,15 +277,15 @@ export const DEMO_PATIENTS: DemoPatient[] = [
           { text: "Ongoing gastrointestinal bleeding can deteriorate quickly.", basis: [] },
         ],
         evidenceGaps: [
-          { missing: "Haemoglobin or PCV", state: "not_documented", why: "Shows the degree of blood loss.", limitation: "Severity cannot be judged.", nextStep: "clarify_record", urgency: "urgent", needsClinicianDecision: true, basis: ["F9"] },
-          { missing: "Endoscopy", state: "not_ordered_consider", why: "Can identify the bleeding source.", limitation: "The source is unknown.", nextStep: "consider_new", urgency: "soon", needsClinicianDecision: true, basis: ["F3"] },
+          { missing: "Haemoglobin or PCV", state: "not_documented", why: "Shows the degree of blood loss.", limitation: "Severity cannot be judged.", nextStep: "clarify_record", urgency: "urgent", needsClinicianDecision: true, basis: ["F9"], coverage: "not_in_plan" },
+          { missing: "Endoscopy", state: "not_ordered_consider", why: "Can identify the bleeding source.", limitation: "The source is unknown.", nextStep: "consider_new", urgency: "soon", needsClinicianDecision: true, basis: ["F3"], coverage: "not_in_plan" },
         ],
         monitoring: [
-          { text: "More frequent pulse and BP checks could be worth considering while the picture is unclear.", basis: ["F5", "F6"] },
+          { text: "More frequent pulse and BP checks could be worth considering while the picture is unclear.", basis: ["F5", "F6", "F10"], coverage: "partly_in_plan" },
         ],
         management: none,
         escalation: [
-          { text: "Persistent tachycardia with a falling BP is something the doctor on call may want to know about.", basis: ["F5", "F6"] },
+          { text: "Persistent tachycardia with a falling BP is something the doctor on call may want to know about.", basis: ["F5", "F6"], coverage: "not_in_plan" },
         ],
         limitations: [LIMIT],
         disclaimer: DEMO_DISCLAIMER,

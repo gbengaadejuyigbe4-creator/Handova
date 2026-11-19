@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import handler from "../api/specialist.js";
 import {
+  COVERAGE,
   GAP_STATES,
   REVIEW_AWAITING,
   SPECIALIST_DISCLAIMER,
@@ -309,6 +310,93 @@ describe("normalizeSpecialistResult", () => {
       expect(gaps[0]).not.toHaveProperty("order");
       expect(gaps[0]).not.toHaveProperty("task");
     });
+  });
+});
+
+
+describe("plan coverage", () => {
+  const snap = buildSnapshot(INPUT); // F? "Doctor's plan" and "Medications recorded" exist in this record
+  const lenses = selectLenses(snap);
+  const NOW = new Date("2026-11-16T10:00:00Z");
+  const key = lenses[0].key;
+  const planId = snap.facts.find((f) => f.label === "Doctor's plan").id;
+  const medsId = snap.facts.find((f) => f.label === "Medications recorded").id;
+  const vitalId = snap.facts.find((f) => f.label === "BP").id;
+
+  const run = (monitoring, gaps = []) =>
+    normalizeSpecialistResult({ perspectives: [{ specialty: key, headline: "h", interpretations: [{ text: "Pulse 96 could suggest strain.", basis: [vitalId] }], monitoring, evidenceGaps: gaps }] }, snap, lenses, NOW).perspectives[0];
+
+  it("knows which facts can prove coverage: the plan, the medications and the record text, never a vital sign", () => {
+    expect(snap.coverageIds.has(planId)).toBe(true);
+    expect(snap.coverageIds.has(medsId)).toBe(true);
+    expect(snap.coverageIds.has("R1")).toBe(true);
+    expect(snap.coverageIds.has(vitalId)).toBe(false);
+  });
+
+  it("keeps in_plan when it cites the plan", () => {
+    const p = run([{ text: "An output chart may help", basis: [planId], coverage: "in_plan" }]);
+    expect(p.monitoring[0].coverage).toBe("in_plan");
+  });
+
+  it("downgrades a coverage claim that cites nothing, and counts it", () => {
+    const r = normalizeSpecialistResult({ perspectives: [{ specialty: key, headline: "h", monitoring: [{ text: "Watch urine output", basis: [], coverage: "in_plan" }] }] }, snap, lenses, NOW);
+    expect(r.perspectives[0].monitoring[0].coverage).toBe("unknown");
+    expect(r.meta.removed.coverageDowngraded).toBe(1);
+  });
+
+  it("downgrades a coverage claim that only cites a vital sign", () => {
+    const p = run([{ text: "Watch the pulse", basis: [vitalId], coverage: "partly_in_plan" }]);
+    expect(p.monitoring[0].coverage).toBe("unknown");
+  });
+
+  it("allows not_in_plan and unknown without any citation", () => {
+    const p = run([{ text: "Consider a daily weight", basis: [], coverage: "not_in_plan" }, { text: "Consider glucose checks", basis: [] }]);
+    expect(p.monitoring.map((m) => m.coverage).sort()).toEqual(["not_in_plan", "unknown"]);
+  });
+
+  it("turns an invented coverage value into unknown", () => {
+    const p = run([{ text: "Consider X", basis: [], coverage: "definitely_done" }]);
+    expect(p.monitoring[0].coverage).toBe("unknown");
+  });
+
+  it("puts suggestions the plan does not cover first", () => {
+    const p = run([
+      { text: "Covered item", basis: [planId], coverage: "in_plan" },
+      { text: "Unclear item", basis: [], coverage: "unknown" },
+      { text: "New item", basis: [], coverage: "not_in_plan" },
+      { text: "Partly item", basis: [medsId], coverage: "partly_in_plan" },
+    ]);
+    expect(p.monitoring.map((m) => m.text)).toEqual(["New item", "Partly item", "Unclear item", "Covered item"]);
+  });
+
+  it("checks coverage on evidence gaps too, and sorts by urgency before coverage", () => {
+    const gap = { why: "w", limitation: "l", state: "not_documented", nextStep: "clarify_record", basis: [] };
+    const p = run([], [
+      { ...gap, missing: "A", urgency: "routine", coverage: "not_in_plan" },
+      { ...gap, missing: "B", urgency: "urgent", coverage: "in_plan" },
+      { ...gap, missing: "C", urgency: "urgent", coverage: "not_in_plan" },
+    ]);
+    expect(p.evidenceGaps.map((g) => g.missing)).toEqual(["C", "B", "A"]);
+    expect(p.evidenceGaps.find((g) => g.missing === "B").coverage).toBe("unknown"); // claimed in_plan with no citation
+  });
+
+  it("counts suggestions not found in the plan for the card header", () => {
+    const p = run([{ text: "New", basis: [], coverage: "not_in_plan" }], [
+      { missing: "G", why: "w", limitation: "l", state: "not_documented", nextStep: "clarify_record", urgency: "soon", basis: [], coverage: "not_in_plan" },
+    ]);
+    expect(p.notInPlanCount).toBe(2);
+  });
+
+  it("does not give interpretations, differentials or risks a coverage field", () => {
+    const p = run([]);
+    expect(p.interpretations[0]).not.toHaveProperty("coverage");
+  });
+
+  it("tells the AI the coverage rules", () => {
+    const prompt = buildPrompt(snap, lenses);
+    for (const c of COVERAGE) expect(prompt).toContain(c);
+    expect(prompt).toMatch(/Never claim in_plan or partly_in_plan without citing/);
+    expect(prompt).toMatch(/not found in this record/);
   });
 });
 
