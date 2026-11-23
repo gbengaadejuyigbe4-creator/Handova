@@ -73,7 +73,7 @@ function ReportEmptyState() {
           <rect x="10" y="15" width="12" height="2" rx="1" fill="#CBD5E1"/>
           <rect x="10" y="20" width="14" height="2" rx="1" fill="#CBD5E1"/>
           <rect x="10" y="25" width="8" height="2" rx="1" fill="#CBD5E1"/>
-          <circle cx="27" cy="27" r="7" fill="#14B8A6"/>
+          <circle cx="27" cy="27" r="7" fill="#0E5A49"/>
           <path d="M24 27l2 2 4-4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       </div>
@@ -114,13 +114,12 @@ export default function ReportOutput({ header, patients, settings }: ReportOutpu
     w.document.write(`<!DOCTYPE html><html><head>
       <title>Handova — Shift Report</title>
       <style>
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap');
         * { box-sizing: border-box; }
-        body { font-family: 'DM Sans', 'Segoe UI', sans-serif; font-size: 13px; line-height: 1.75; padding: 40px; color: #1A2B3C; background: white; max-width: 800px; margin: 0 auto; }
+        body { font-family: 'Segoe UI', Roboto, Arial, sans-serif; font-size: 13px; line-height: 1.75; padding: 40px; color: #1A2B3C; background: white; max-width: 800px; margin: 0 auto; }
         pre { white-space: pre-wrap; word-wrap: break-word; font-family: inherit; }
-        .header { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 2px solid #14B8A6; }
-        .logo { width: 32px; height: 32px; background: #0D9488; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
-        h1 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: #0D9488; margin: 0; }
+        .header { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 2px solid #0E5A49; }
+        .logo { width: 32px; height: 32px; background: #0E5A49; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+        h1 { font-size: 16px; font-weight: 700; color: #0E5A49; margin: 0; }
         .meta { font-size: 11px; color: #607A93; margin-top: 2px; }
         @media print { body { padding: 20px; } }
       </style>
@@ -225,7 +224,7 @@ export default function ReportOutput({ header, patients, settings }: ReportOutpu
             {/* Report content */}
             <div className="p-6 overflow-auto" style={{ maxHeight: '62vh' }}>
               {showRaw ? (
-                <pre className="text-xs leading-[1.85] whitespace-pre-wrap font-mono tracking-wide"
+                <pre className="text-xs leading-[1.85] whitespace-pre-wrap font-mono "
                   style={{ color: '#1A2B3C', fontFamily: "'JetBrains Mono', monospace" }}>
                   {report}
                 </pre>
@@ -245,12 +244,12 @@ export default function ReportOutput({ header, patients, settings }: ReportOutpu
                             </pre>
                           </div>
                         ) : isHeader ? (
-                          <pre className="text-[13px] font-bold text-teal-800 whitespace-pre-wrap tracking-wide" style={{ fontFamily: 'inherit' }}>
+                          <pre className="text-[13px] font-bold text-teal-800 whitespace-pre-wrap " style={{ fontFamily: 'inherit' }}>
                             {block}
                           </pre>
                         ) : isNursesNote ? (
                           <div>
-                            <p className="text-[11px] font-bold text-teal-700 uppercase tracking-widest mb-1.5">Nurses' Note</p>
+                            <p className="text-[11px] font-bold text-teal-700 mb-1.5">Nurses' Note</p>
                             <pre className="text-[13.5px] text-slate-700 whitespace-pre-wrap leading-[1.85]" style={{ fontFamily: 'inherit' }}>
                               {block.replace("NURSES' NOTE\n", "")}
                             </pre>
@@ -277,10 +276,7 @@ export default function ReportOutput({ header, patients, settings }: ReportOutpu
                   ? "text-white"
                   : "btn-primary btn-generate-idle"
               }`}
-              style={copied ? {
-                background: 'linear-gradient(135deg, #0A7A6F, #0D9488)',
-                boxShadow: '0 4px 20px rgba(13,148,136,0.35)',
-              } : {}}>
+              style={copied ? { background: '#0E5A49', border: '1px solid #0A4638' } : {}}>
               {copied ? (
                 <>
                   <span className="check-in inline-flex"><Check size={18} strokeWidth={3} /></span>

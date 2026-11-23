@@ -1,89 +1,31 @@
-import { useState, useEffect, useRef } from "react";
-import {
-  ArrowRight, Mic, FileText, Shield,
-  CheckCircle, Stethoscope, Building2, Zap,
-  Download, Share, Brain, ClipboardList,
-  type LucideIcon
-} from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowRight, Download, Share } from "lucide-react";
 import ReportHistory from "./ReportHistory";
+import Logo from "./Logo";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-interface Stat { value: string; label: string; sub?: string; }
-interface Feature { icon: LucideIcon; title: string; desc: string; tag?: string; }
-
-const STATS: Stat[] = [
-  { value: "< 5 min", label: "Report generation", sub: "From notes to EMR-ready text" },
-  { value: "40 min", label: "Saved per shift", sub: "Returned to patient care" },
-  { value: "SBAR+", label: "Global formats", sub: "SBAR · ISBAR · Standard" },
-  { value: "Zero", label: "Data stored", sub: "No servers, no retention" },
+const STEPS = [
+  { n: "1", title: "Enter the shift details", body: "Ward, shift, date and patient flow. Patients at handover is worked out for you." },
+  { n: "2", title: "Add each patient", body: "Upload the hospital record as a PDF, then speak or type what happened: medicines, vitals, the doctor's plan, complaints." },
+  { n: "3", title: "Check, then copy", body: "Handova drafts the report in the format your hospital uses. You read it, change what you need to, and paste it into your hospital system." },
 ];
 
-const FEATURES: Feature[] = [
-  { icon: Mic, title: "Medical Voice Transcription", desc: "Deepgram Nova-3-Medical — trained on clinical vocabulary — transcribes drug names, dosages, and clinical abbreviations with near-perfect accuracy across accents.", tag: "AI" },
-  { icon: Brain, title: "Smart EMR Integration", desc: "Upload your EMR or hospital system PDF export. Handova reads the full clinical record, generates specific questions, and pre-fills your report with verified data.", tag: "New" },
-  { icon: ClipboardList, title: "Shift Care Planner", desc: "Multi-patient shift planning with time-structured, evidence-based nursing interventions. Nurse-to-patient ratio aware. Generates a combined timeline for the full shift.", tag: "New" },
-  { icon: FileText, title: "Complete Shift Reports", desc: "Patient flow, nurses' notes, vitals, medications, and doctor's plans — assembled in SBAR, ISBAR, or Standard format to match your hospital's requirements.", },
-  { icon: Stethoscope, title: "Built by a Practising Nurse", desc: "Every clinical phrase, every workflow decision, every format choice comes from real ward experience. Not a developer's assumption — a nurse's lived reality.", },
-  { icon: Shield, title: "Zero Data Retention", desc: "No patient data is ever stored. API calls are processed and discarded immediately. No account. No login. No cloud storage of any kind.", },
+const CAPABILITIES = [
+  { title: "Voice notes", body: "Speak your notes and get text. A speech model trained on medical vocabulary helps with drug names and abbreviations." },
+  { title: "Hospital record (PDF)", body: "Upload the patient's record saved as a PDF. Handova reads it and fills in what it finds, so you can check it." },
+  { title: "Questions for the shift", body: "Short questions about things the record does not answer, so the report is not guesswork." },
+  { title: "Care plan and risk flags", body: "Drafts of nursing priorities and things to watch. Always labelled as an AI draft, and meant to be checked against the chart." },
+  { title: "Specialist suggestions", body: "On request: things a doctor may want to consider, and information that may be missing from the record. Suggestions only, never orders." },
+  { title: "Report formats", body: "Standard, SBAR or ISBAR, with wording for your region." },
 ];
-
-const WORKFLOW = [
-  {
-    step: "01",
-    title: "Enter shift information",
-    desc: "Select your ward, shift type, date, and region. Enter patient flow numbers — taken over, admissions, transfers, discharges. Patients at handover is calculated automatically.",
-    accent: "teal",
-  },
-  {
-    step: "02",
-    title: "Add patients and speak shift events",
-    desc: "For each patient, enter their name and diagnosis. Upload their EMR PDF to auto-fill and generate targeted clinical questions. Then speak or type what happened — medications, vitals, doctor's plan, complaints, procedures.",
-    accent: "teal",
-    highlight: true,
-  },
-  {
-    step: "03",
-    title: "Generate, review, and copy",
-    desc: "One tap generates a complete nurses' note in correct clinical language for your region. Choose Standard, SBAR, or ISBAR format. Review the assembled report, copy it, paste directly into your EMR.",
-    accent: "peach",
-  },
-];
-
-function AnimatedStat({ value, label, sub, delay }: Stat & { delay: number }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.2 });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-  return (
-    <div
-      ref={ref}
-      className="text-center px-4"
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(16px)",
-        transition: `opacity 0.55s ease ${delay}ms, transform 0.55s cubic-bezier(0.16,1,0.3,1) ${delay}ms`,
-      }}
-    >
-      <div className="font-display text-3xl md:text-4xl font-semibold gradient-text-teal mb-1.5 font-tabular leading-none">{value}</div>
-      <div className="text-xs font-bold text-slate-700 uppercase tracking-widest mb-0.5">{label}</div>
-      {sub && <div className="text-[11px] text-slate-400">{sub}</div>}
-    </div>
-  );
-}
 
 interface LandingPageProps { onEnterApp: () => void; }
 
 export default function LandingPage({ onEnterApp }: LandingPageProps) {
-  const [scrolled, setScrolled] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
 
@@ -106,371 +48,141 @@ export default function LandingPage({ onEnterApp }: LandingPageProps) {
     setInstallPrompt(null);
   };
 
-  useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 30);
-    window.addEventListener("scroll", handler, { passive: true });
-    return () => window.removeEventListener("scroll", handler);
-  }, []);
-
   return (
-    <div className="min-h-screen mesh-bg text-slate-900 dark:text-slate-100 transition-colors">
+    <div className="min-h-screen bg-[var(--page-bg)] text-[var(--text-primary)]">
 
-      {/* ── Nav ── */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? "glass border-b border-white/10 dark:border-white/5 py-4" : "py-6 bg-transparent"
-      }`}>
-        <div className="max-w-6xl mx-auto px-5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl overflow-hidden shadow-lg shadow-teal-900/40 flex-shrink-0">
-              <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-                <rect width="48" height="48" rx="12" fill="url(#logoGrad)"/>
-                <defs>
-                  <linearGradient id="logoGrad" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor="#0D9488"/>
-                    <stop offset="100%" stopColor="#0A7A6F"/>
-                  </linearGradient>
-                </defs>
-                <path d="M13 12h5v10h12V12h5v24h-5V27H18v9h-5V12z" fill="white" opacity="0.96"/>
-                <rect x="20" y="20" width="8" height="2" rx="1" fill="white" opacity="0.4"/>
-              </svg>
-            </div>
-            <span className="font-display text-xl font-semibold text-slate-900 dark:text-white tracking-tight">Handova</span>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <a href="#how-it-works" className="hidden md:block text-sm text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:hover:text-white transition-colors px-3 py-2 font-medium">How it works</a>
-            <a href="#features" className="hidden md:block text-sm text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:hover:text-white transition-colors px-3 py-2 font-medium">Features</a>
-            {!installed && installPrompt && (
-              <button onClick={handleInstall} className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/20 hover:text-slate-900 dark:hover:text-white transition-all">
-                <Download size={13} /> Install
-              </button>
-            )}
-            <button onClick={onEnterApp} className="btn-primary text-sm px-6 py-3 shadow-[0_0_20px_rgba(20,184,166,0.3)]">
-              Open App <ArrowRight size={14} />
-            </button>
-          </div>
+      {/* Top bar */}
+      <header className="sticky top-0 z-50 bg-[var(--surface-1)] border-b border-[var(--border-strong)]">
+        <div className="max-w-5xl mx-auto px-5 h-14 flex items-center justify-between">
+          <a href="#top" className="flex items-center gap-2.5" aria-label="Handova home">
+            <Logo size={28} />
+            <span className="font-display text-[18px] text-teal-700 dark:text-teal-300">Handova</span>
+          </a>
+          <nav className="flex items-center gap-1 sm:gap-5 text-sm font-bold">
+            <a href="#how-it-works" className="hidden sm:inline text-slate-600 hover:text-slate-900 dark:hover:text-white">How it works</a>
+            <a href="#what-it-does" className="hidden sm:inline text-slate-600 hover:text-slate-900 dark:hover:text-white">What it does</a>
+            <a href="#your-data" className="hidden sm:inline text-slate-600 hover:text-slate-900 dark:hover:text-white">Your data</a>
+            <button onClick={onEnterApp} className="btn-primary text-sm px-4 py-2 min-h-[40px]">Open Handova</button>
+          </nav>
         </div>
-      </nav>
+      </header>
 
-      {/* ── Hero ── */}
-      <section className="relative pt-36 pb-32 px-6 overflow-hidden">
-        {/* Background glows */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-24 left-1/3 w-[600px] h-[600px] rounded-full blur-[120px] bg-[rgba(13,148,136,0.15)]" />
-          <div className="absolute top-40 right-1/4 w-[400px] h-[400px] rounded-full blur-[100px] bg-[rgba(244,149,106,0.10)]" />
-          {/* ECG line */}
-          <svg className="absolute top-28 right-12 opacity-[0.06] hidden lg:block" width="380" height="90" viewBox="0 0 380 90">
-            <polyline
-              points="0,45 48,45 64,12 76,78 88,45 140,45 156,22 168,68 180,45 232,45 248,6 260,84 272,45 380,45"
-              fill="none" stroke="#14b8a6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-            />
-          </svg>
-          <svg className="absolute bottom-24 left-12 opacity-[0.04] hidden lg:block" width="280" height="70" viewBox="0 0 280 70">
-            <polyline
-              points="0,35 36,35 48,9 58,61 68,35 104,35 116,17 126,53 136,35 172,35 184,4 196,66 208,35 280,35"
-              fill="none" stroke="#14b8a6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-            />
-          </svg>
-          {/* Grid overlay */}
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(20,184,166,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(20,184,166,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
-        </div>
-
-        <div className="max-w-4xl mx-auto text-center relative">
-          {/* Premium Glowing Badge */}
-          <div className="group inline-flex items-center gap-3 px-5 py-2.5 rounded-full text-[13px] font-semibold mb-10 fade-up relative overflow-hidden transition-all duration-500 hover:scale-105"
-            style={{
-              background: 'linear-gradient(145deg, rgba(13,148,136,0.1) 0%, rgba(13,148,136,0.02) 100%)',
-              border: '1px solid rgba(45,212,191,0.2)',
-              boxShadow: '0 0 20px rgba(45,212,191,0.15), inset 0 0 20px rgba(45,212,191,0.05)',
-              backdropFilter: 'blur(12px)'
-            }}>
-            {/* Inner glow effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-teal-500/0 via-teal-400/10 to-teal-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-md" />
-            
-            {/* Beating pulse dot */}
-            <div className="relative flex items-center justify-center">
-              <span className="absolute w-2.5 h-2.5 rounded-full bg-teal-400 opacity-60 animate-ping" />
-              <span className="relative w-2 h-2 rounded-full bg-teal-300 shadow-[0_0_8px_rgba(45,212,191,0.8)]" />
-            </div>
-            
-            <span className="text-teal-800 dark:text-teal-200 tracking-wide font-display">
-              Built by a Practising Nurse <span className="opacity-40 mx-1">|</span> Born on the wards of Akure
-            </span>
-          </div>
-
-          {/* Headline */}
-          <h1 className="font-display text-slate-900 dark:text-white leading-[1.04] mb-7 fade-up-1 text-[clamp(42px,7vw,84px)] tracking-[-0.03em]">
-            Shift reports in{" "}
-            <span className="gradient-text italic">5 minutes.</span>
-            <br />
-            <span className="text-slate-600 dark:text-slate-500">Not 40.</span>
-          </h1>
-
-          {/* Sub */}
-          <p className="text-slate-700 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed mb-10 fade-up-2 text-[clamp(15px,2.2vw,19px)]">
-            AI-powered nursing shift report generator used by nurses worldwide.
-            Speak your shift events. Upload your EMR export. Get a complete, perfectly formatted report
-            — ready to paste into any hospital system.
-          </p>
-
-          {/* CTAs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 fade-up-3">
-            <button onClick={onEnterApp} className="btn-primary px-9 py-4 w-full sm:w-auto text-[15px]">
-              Generate Your First Report <ArrowRight size={16} />
-            </button>
-            {!installed && installPrompt && (
-              <button onClick={handleInstall}
-                className="flex items-center gap-2 px-9 py-4 rounded-xl font-semibold w-full sm:w-auto text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-white/12 hover:border-slate-400 dark:hover:border-white/22 hover:text-slate-900 dark:hover:text-white transition-all bg-white/50 dark:bg-white/5 text-[15px]">
-                <Download size={16} /> Install App
-              </button>
-            )}
-            {!installPrompt && !showIosHint && (
-              <a href="#how-it-works"
-                className="flex items-center gap-2 px-9 py-4 rounded-xl font-semibold w-full sm:w-auto justify-center text-slate-700 dark:text-slate-400 border border-slate-300 dark:border-white/8 hover:border-slate-400 dark:hover:border-white/18 hover:text-slate-900 dark:hover:text-slate-200 transition-all bg-white/50 dark:bg-white/5 text-[15px]">
-                See how it works
-              </a>
-            )}
-          </div>
-
-          {showIosHint && (
-            <div className="mt-6 inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm text-slate-700 dark:text-slate-400 fade-up-3 border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5">
-              <Share size={14} className="text-teal-600 dark:text-teal-400 flex-shrink-0" />
-              Tap <span className="text-teal-700 dark:text-teal-300 font-semibold mx-1">Share</span> then <span className="text-teal-700 dark:text-teal-300 font-semibold ml-1">Add to Home Screen</span>
-            </div>
-          )}
-
-          {/* Trust signals */}
-          <div className="flex items-center justify-center gap-6 mt-14 fade-up-4">
-            {[
-              { icon: Shield, text: "No data stored" },
-              { icon: Zap, text: "No login required" },
-              { icon: CheckCircle, text: "Free to use" },
-            ].map(({ icon: Icon, text }, i) => (
-              <div key={i} className="flex items-center gap-2 text-xs text-slate-500">
-                <Icon size={13} className="text-teal-600" />
-                <span>{text}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Stats — embedded cleanly ── */}
-      <section className="py-20 px-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="glass rounded-[32px] px-8 py-12">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 divide-x divide-slate-100">
-              {STATS.map((s, i) => (
-                <AnimatedStat key={i} {...s} delay={i * 80} />
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── How it works ── */}
-      <section id="how-it-works" className="py-24 px-6 relative">
-        <div className="max-w-4xl mx-auto relative z-10">
-          <div className="text-center mb-16">
-            <p className="section-label mb-3">How it works</p>
-            <h2 className="font-display text-3xl md:text-5xl font-semibold leading-tight">
-              From raw notes to a full report<br />
-              <span className="gradient-text italic">in three steps.</span>
-            </h2>
-          </div>
-
-          <div className="space-y-4">
-            {WORKFLOW.map((step, i) => (
-              <div key={i} className={`flex gap-6 items-start p-7 rounded-2xl border transition-all duration-300 ${
-                step.highlight
-                  ? "border-teal-200 bg-white shadow-[0_4px_24px_rgba(20,184,166,0.10)]"
-                  : "border-slate-200 bg-white shadow-[0_1px_6px_rgba(12,27,46,0.06)]"
-              }`}>
-                <div className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center font-display text-lg font-bold text-white ${
-                  step.accent === 'peach'
-                    ? "bg-gradient-to-br from-[#D9622A] to-[#F4956A] shadow-[0_4px_14px_rgba(217,98,42,0.3)]"
-                    : "bg-gradient-to-br from-[#0A8579] to-[#14B8A6] shadow-[0_4px_14px_rgba(13,148,136,0.3)]"
-                }`}>
-                  {step.step}
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-slate-900 mb-2 text-base">{step.title}</h3>
-                  <p className="text-sm text-slate-600 leading-relaxed">{step.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Features ── */}
-      <section id="features" className="py-24 px-6 bg-white">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <p className="section-label mb-3">What Handova does</p>
-            <h2 className="font-display text-3xl md:text-4xl font-semibold text-slate-900 leading-tight">
-              Everything a shift report needs.
-              <br />
-              <span className="gradient-text-teal italic">Nothing it doesn't.</span>
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {FEATURES.map((f, i) => (
-              <div key={i} className="feature-card">
-                {f.tag && (
-                  <span className={`absolute top-4 right-4 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest ${
-                    f.tag === 'New' ? 'bg-teal-100 text-teal-900' : 'bg-indigo-50 text-indigo-800'
-                  }`}>
-                    {f.tag}
-                  </span>
-                )}
-                <div className="icon-container-teal mb-5">
-                  <f.icon size={18} className="text-teal-600" />
-                </div>
-                <h3 className="font-semibold text-slate-900 mb-2.5 text-sm leading-snug">{f.title}</h3>
-                <p className="text-sm text-slate-500 leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── For Nurses / Admins ── */}
-      <section className="py-24 px-6 bg-[#F0F4F8]">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
-            <p className="section-label mb-3">Built for everyone involved</p>
-            <h2 className="font-display text-3xl md:text-4xl font-semibold text-slate-900 leading-tight">
-              Whether you're at the bedside<br />
-              <span className="gradient-text-teal italic">or behind the desk.</span>
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Nurses */}
-            <div className="rounded-2xl p-8 border border-teal-200 bg-gradient-to-br from-[#F0FDF9] to-white shadow-[0_4px_24px_rgba(20,184,166,0.10)]">
-              <div className="flex items-center gap-3 mb-7">
-                <div className="icon-container-teal">
-                  <Stethoscope size={18} className="text-teal-600" />
-                </div>
-                <div>
-                  <p className="section-label text-[10px]">For Nurses</p>
-                  <p className="text-slate-900 font-bold text-sm mt-0.5">At the bedside</p>
-                </div>
-              </div>
-              <ul className="space-y-3.5 mb-8">
-                {[
-                  "Speak or type shift events in plain language",
-                  "AI generates clinical narrative automatically",
-                  "Upload EMR PDF to pre-fill patient details",
-                  "Region-aware formatting — SBAR, ISBAR, and more",
-                ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3 text-sm text-slate-700">
-                    <div className="w-4 h-4 rounded-full bg-teal-100 border border-teal-200 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <CheckCircle size={10} className="text-teal-600" />
-                    </div>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <button onClick={onEnterApp} className="btn-primary w-full justify-center text-sm">
-                Start Writing Reports <ArrowRight size={14} />
-              </button>
-            </div>
-
-            {/* Admins */}
-            <div className="rounded-2xl p-8 border border-[#FFE4D6] bg-gradient-to-br from-[#FFF5F0] to-white shadow-[0_4px_24px_rgba(217,98,42,0.08)]">
-              <div className="flex items-center gap-3 mb-7">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center border border-[#FFCAB0] bg-gradient-to-br from-[#FFF5F0] to-[#FFE4D6] shadow-[0_2px_8px_rgba(217,98,42,0.12)]">
-                  <Building2 size={18} className="text-orange-500" />
-                </div>
-                <div>
-                  <p className="section-label text-[10px] text-[#D9622A]">For Administrators</p>
-                  <p className="text-slate-900 font-bold text-sm mt-0.5">At the institutional level</p>
-                </div>
-              </div>
-              <ul className="space-y-3.5 mb-8">
-                {[
-                  "Reduce documentation time across all wards",
-                  "Consistent, standardised report format",
-                  "Integration-ready for any hospital EMR",
-                  "No infrastructure changes required",
-                ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3 text-sm text-slate-700">
-                    <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 bg-[#FFE4D6] border border-[#FFCAB0]">
-                      <CheckCircle size={10} className="text-orange-500" />
-                    </div>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <a href="mailto:gbengaadejuyigbe4@gmail.com"
-                className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-sm font-bold border border-[#FFCAB0] text-[#D9622A] transition-all hover:bg-orange-50">
-                Discuss Integration <ArrowRight size={14} />
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Privacy note ── */}
-      <section className="py-6 px-6 bg-white border-y border-slate-100">
-        <div className="max-w-3xl mx-auto flex items-start gap-5 p-6 rounded-2xl bg-gradient-to-br from-[#FFF5F0] to-[#FFFBF8] border border-[#FFE4D6]">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg bg-[#FFCAB0] border border-[#FFB08A]">
-            🔒
-          </div>
+      <main id="top">
+        {/* Hero: the product's own output, not a claim about it */}
+        <section className="max-w-5xl mx-auto px-5 pt-12 pb-16 sm:pt-16 sm:pb-20 grid lg:grid-cols-[1.05fr_0.95fr] gap-10 lg:gap-14 items-start">
           <div>
-            <h3 className="font-bold text-slate-900 mb-1 text-sm">Your patient data never leaves your device</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Handova does not store any patient information on any server. The AI only receives the text you type or speak — processed and discarded immediately. All draft saving happens locally in your browser. No account, no login, no data retention of any kind.
+            <p className="text-sm font-bold text-teal-700 dark:text-teal-300 mb-4">Built by a practising nurse in Akure</p>
+            <h1 className="font-display text-[34px] sm:text-[46px] leading-[1.1] mb-5">
+              Shift handover reports, drafted from your own notes.
+            </h1>
+            <p className="text-[17px] text-slate-700 dark:text-slate-300 leading-relaxed max-w-xl mb-7">
+              Speak or type what happened on your shift. Add the hospital record as a PDF. Handova drafts the report and the care plan. You check it, then paste it into your hospital system.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <button onClick={onEnterApp} className="btn-primary px-6">
+                Open Handova <ArrowRight size={16} />
+              </button>
+              {installPrompt && !installed && (
+                <button onClick={handleInstall} className="btn-secondary">
+                  <Download size={16} /> Add to home screen
+                </button>
+              )}
+            </div>
+            {showIosHint && (
+              <p className="mt-3 text-sm text-slate-600 flex items-center gap-1.5">
+                <Share size={14} /> On iPhone: tap Share, then Add to Home Screen.
+              </p>
+            )}
+            <p className="mt-6 text-sm text-slate-600 max-w-lg">
+              The AI drafts. A nurse checks. Nothing is sent to the hospital system for you.
             </p>
           </div>
-        </div>
-      </section>
 
-      {/* ── CTA ── */}
-      <section className="py-28 px-6 hero-bg">
-        <div className="max-w-3xl mx-auto text-center">
-          <p className="section-label-light mb-5">Ready to save time?</p>
-          <h2 className="font-display font-semibold text-white mb-5 leading-tight text-[clamp(32px,5.5vw,56px)]">
-            Your next shift report<br />
-            <span className="gradient-text-light italic">starts here.</span>
-          </h2>
-          <p className="text-slate-400 mb-10 leading-relaxed text-[15px]">
-            Free to use. No account required. Works on any phone or laptop.<br />
-            Born on the wards of Akure. Built for every nurse on earth.
-          </p>
-          <button onClick={onEnterApp} className="btn-primary px-12 py-5 mx-auto text-[16px] shadow-[0_8px_40px_rgba(13,148,136,0.40)]">
-            Open Handova <ArrowRight size={18} />
-          </button>
-        </div>
-      </section>
-
-      {/* ── Report History ── */}
-      <div className="bg-[#06111E]">
-        <ReportHistory />
-      </div>
-
-      {/* ── Footer ── */}
-      <footer className="py-10 px-6 border-t bg-[#06111E] border-white/5">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg overflow-hidden">
-              <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-                <rect width="48" height="48" rx="12" fill="#0D9488"/>
-                <path d="M13 12h5v10h12V12h5v24h-5V27H18v9h-5V12z" fill="white" opacity="0.95"/>
-              </svg>
+          <figure className="report-document" aria-label="Example report">
+            <div className="px-5 py-3 border-b border-[var(--border-subtle)] flex items-center justify-between gap-3">
+              <span className="text-sm font-bold">Shift report · Medical ward · Day</span>
+              <span className="text-xs text-slate-600">Example, invented patient</span>
             </div>
-            <span className="font-display text-sm font-semibold text-slate-400">Handova</span>
+            <div className="report-document-inner px-5 py-4 space-y-3 text-[15px]">
+              <p><b>Situation.</b> Demo Patient, 58, male. Decompensated heart failure, day 2.</p>
+              <p><b>Background.</b> On IV furosemide 40 mg twice daily and spironolactone 25 mg daily.</p>
+              <p><b>Assessment.</b> BP 150/90, pulse 96, respiratory rate 26, SpO2 93%. Intake and output chart requested; no totals documented yet.</p>
+              <p><b>Recommendation.</b> Continue strict intake and output. Raise the missing totals and the day 1 potassium with the doctor on the next round.</p>
+            </div>
+            <figcaption className="px-5 py-3 border-t border-[var(--border-subtle)] text-xs text-slate-600">
+              An AI draft for the nurse to check and edit.
+            </figcaption>
+          </figure>
+        </section>
+
+        {/* How it works */}
+        <section id="how-it-works" className="border-t border-[var(--border-strong)] bg-[var(--surface-1)]">
+          <div className="max-w-5xl mx-auto px-5 py-14">
+            <h2 className="font-display text-[28px] mb-8">How it works</h2>
+            <ol className="grid md:grid-cols-3 gap-8">
+              {STEPS.map((s) => (
+                <li key={s.n} className="border-t-[3px] border-teal-600 dark:border-teal-400 pt-4">
+                  <p className="font-display text-[15px] text-teal-700 dark:text-teal-300 tabular-nums mb-1">Step {s.n}</p>
+                  <h3 className="font-display text-[19px] mb-2">{s.title}</h3>
+                  <p className="text-[15px] text-slate-700 dark:text-slate-300 leading-relaxed">{s.body}</p>
+                </li>
+              ))}
+            </ol>
           </div>
-          <p className="text-xs text-slate-600 text-center">
-            AI-Powered Nursing Shift Reports · © 2026 Handova · Born in Akure 🇳🇬 · Used worldwide 🌍
-          </p>
-          <p className="text-xs text-slate-700 font-mono">v11.0</p>
+        </section>
+
+        {/* What it does */}
+        <section id="what-it-does" className="border-t border-[var(--border-strong)]">
+          <div className="max-w-5xl mx-auto px-5 py-14">
+            <h2 className="font-display text-[28px] mb-8">What it does</h2>
+            <dl className="grid md:grid-cols-2 gap-x-12">
+              {CAPABILITIES.map((c) => (
+                <div key={c.title} className="py-4 border-t border-[var(--border-subtle)]">
+                  <dt className="font-display text-[17px] mb-1">{c.title}</dt>
+                  <dd className="text-[15px] text-slate-700 dark:text-slate-300 leading-relaxed">{c.body}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
+
+        {/* Your data: stated accurately */}
+        <section id="your-data" className="border-t border-[var(--border-strong)] bg-[var(--surface-1)]">
+          <div className="max-w-5xl mx-auto px-5 py-14 grid md:grid-cols-[0.8fr_1.2fr] gap-8">
+            <h2 className="font-display text-[28px]">What happens to what you enter</h2>
+            <ul className="space-y-3 text-[16px] text-slate-700 dark:text-slate-300 leading-relaxed">
+              <li><b>Saved on your device.</b> Reports and drafts are kept in this browser, on this device.</li>
+              <li><b>Not kept on our servers.</b> Handova does not store a copy of what you submit.</li>
+              <li><b>Sent to AI services.</b> To write the output, the text, audio or PDF content you submit is sent to AI services for speech-to-text and text generation. They process it for that request.</li>
+              <li><b>Check your hospital's policy.</b> Find out whether patient information may be shared with AI services, and leave out names where you can.</li>
+            </ul>
+          </div>
+        </section>
+
+        {/* For hospitals */}
+        <section className="border-t border-[var(--border-strong)]">
+          <div className="max-w-5xl mx-auto px-5 py-12 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+            <div>
+              <h2 className="font-display text-[22px] mb-1">Hospitals and administrators</h2>
+              <p className="text-[15px] text-slate-700 dark:text-slate-300 max-w-xl">
+                Handova is a working prototype. If your hospital would like to talk about a pilot or about connecting it to your records system, get in touch.
+              </p>
+            </div>
+            <a href="mailto:gbengaadejuyigbe4@gmail.com" className="btn-secondary whitespace-nowrap">
+              Contact the builder <ArrowRight size={16} />
+            </a>
+          </div>
+        </section>
+
+        <ReportHistory />
+      </main>
+
+      <footer className="border-t border-[var(--border-strong)] bg-[var(--surface-1)]">
+        <div className="max-w-5xl mx-auto px-5 py-6 flex items-center gap-3 text-sm text-slate-600">
+          <Logo size={20} />
+          <span>Handova. Built in Akure by a practising nurse.</span>
         </div>
       </footer>
-
     </div>
   );
 }

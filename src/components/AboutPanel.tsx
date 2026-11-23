@@ -49,7 +49,7 @@ const HOW_TO_SECTIONS: HowToSection[] = [
     steps: [
       {
         heading: "Open the app and make sure Quick Mode is selected",
-        body: "When you first enter the app, you'll see two tabs at the top: ⚡ Quick Mode and ✍️ Structured Mode. Quick Mode is the default.",
+        body: "When you first enter the app, you'll see two tabs at the top: Quick Mode and Structured Mode. Quick Mode is the default.",
       },
       {
         heading: "Type or paste your raw shift notes",
@@ -219,7 +219,7 @@ const HOW_TO_SECTIONS: HowToSection[] = [
     steps: [
       {
         heading: "Open Settings",
-        body: "Tap the Settings icon (⚙️) in the top right corner of the app.",
+        body: "Tap the Settings icon (the gear) in the top right corner of the app.",
       },
       {
         heading: "Enter your profile",
@@ -250,7 +250,7 @@ const HOW_TO_SECTIONS: HowToSection[] = [
     steps: [
       {
         heading: "Open Settings → Language",
-        body: "Tap Settings (⚙️) in the top right. Under the Language section, you'll see three options: English, Français (French), and العربية (Arabic).",
+        body: "Tap Settings (the gear) in the top right. Under the Language section, you'll see three options: English, Français (French), and العربية (Arabic).",
       },
       {
         heading: "Select your language and save",
@@ -368,8 +368,8 @@ export default function AboutPanel({ onClose, lang }: AboutPanelProps) {
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 shadow-md">
                   <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-                    <rect width="48" height="48" rx="12" fill="#0D9488"/>
-                    <path d="M13 12h5v10h12V12h5v24h-5V27H18v9h-5V12z" fill="white" opacity="0.95"/>
+                    <rect width="48" height="48" rx="8" fill="#0E5A49"/>
+                    <path d="M13 12h5v10h12V12h5v24h-5V27H18v9h-5V12z" fill="white"/>
                   </svg>
                 </div>
                 <div>
@@ -414,7 +414,7 @@ export default function AboutPanel({ onClose, lang }: AboutPanelProps) {
 
               {/* Author */}
               <div className="bg-slate-50 rounded-xl p-4">
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">{t(lang, "builtBy")}</p>
+                <p className="text-[10px] font-bold text-slate-500 mb-2">{t(lang, "builtBy")}</p>
                 <p className="text-sm font-semibold text-slate-800">{author}</p>
                 <p className="text-xs text-slate-500 mt-0.5">
                   {settings.facilityName || "Nigeria Police Medical Services, Akure"}
@@ -517,7 +517,7 @@ export default function AboutPanel({ onClose, lang }: AboutPanelProps) {
 
                         {section.tip && (
                           <div className="bg-teal-50 border border-teal-200 rounded-lg px-3 py-2.5">
-                            <p className="text-[10px] font-bold text-teal-700 uppercase tracking-wider mb-1">Pro tip</p>
+                            <p className="text-[10px] font-bold text-teal-700 mb-1">Pro tip</p>
                             <p className="text-xs text-teal-800 leading-relaxed">{section.tip}</p>
                           </div>
                         )}

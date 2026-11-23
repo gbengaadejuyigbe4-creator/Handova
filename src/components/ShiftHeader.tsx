@@ -84,7 +84,7 @@ export default function ShiftHeader({ header, onChange }: ShiftHeaderProps) {
     <div className="space-y-5 fade-up">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Ward / Unit</label>
+          <label className="block text-xs font-medium text-slate-400 mb-1.5 ">Ward / Unit</label>
 
           {customWards.length > 0 && !showingCustomInput && (
             <div className="mb-2 flex flex-wrap gap-1.5">
@@ -147,7 +147,7 @@ export default function ShiftHeader({ header, onChange }: ShiftHeaderProps) {
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Shift</label>
+          <label className="block text-xs font-medium text-slate-400 mb-1.5 ">Shift</label>
           <div className="relative">
             <Clock size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
             <select value={header.shift} onChange={(e) => field("shift", e.target.value as ShiftType)} className="select-field" style={{ paddingLeft: "36px" }}>
@@ -158,7 +158,7 @@ export default function ShiftHeader({ header, onChange }: ShiftHeaderProps) {
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Date</label>
+          <label className="block text-xs font-medium text-slate-400 mb-1.5 ">Date</label>
           <div className="relative">
             <Calendar size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
             <input type="date" value={header.date} onChange={(e) => field("date", e.target.value)}

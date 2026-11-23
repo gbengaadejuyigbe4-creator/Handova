@@ -58,7 +58,7 @@ export function SpecialistResults({ data }: { data: SpecialistResponse }) {
   return (
     <div className="space-y-3">
       <p className="text-[11px] font-semibold text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 leading-relaxed">
-        ⚠ {data.notice}
+        {data.notice}
       </p>
 
       {data.perspectives.length === 0 ? (

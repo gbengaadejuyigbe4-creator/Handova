@@ -5,7 +5,8 @@
  */
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, FileText, ChevronRight, Settings, Info, ClipboardList, History, Moon, Sun } from "lucide-react";
+import { Plus, FileText, ChevronRight, Settings, Info, ClipboardList, History, Moon, Sun, ListChecks, Zap } from "lucide-react";
+import Logo from "./components/Logo";
 import ShiftHeader from "./components/ShiftHeader";
 import PatientForm from "./components/PatientForm";
 import ReportOutput from "./components/ReportOutput";
@@ -189,10 +190,10 @@ export default function App() {
       <>
         {showDraftBanner && (
           <div className="fixed top-0 left-0 right-0 z-[300] flex justify-center px-4 pt-4">
-            <div className="glass border border-teal-500/30 rounded-2xl px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 max-w-lg w-full shadow-2xl fade-up">
+            <div className="bg-[var(--surface-1)] border border-[var(--border-strong)] rounded-lg px-5 py-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 max-w-lg w-full shadow-lg fade-up">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-white">{t(lang, "continueDraft")}</p>
-                <p className="text-xs text-slate-400 mt-0.5">{t(lang, "draftFound")}</p>
+                <p className="text-sm font-bold text-[var(--text-primary)]">{t(lang, "continueDraft")}</p>
+                <p className="text-sm text-slate-600 mt-0.5">{t(lang, "draftFound")}</p>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button onClick={handleDiscardDraft} className="btn-secondary text-xs px-3 py-2">{t(lang, "discard")}</button>
@@ -214,93 +215,68 @@ export default function App() {
       {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} onSettingsChange={handleSettingsChange} lang={lang} />}
       {showAbout && <AboutPanel onClose={() => setShowAbout(false)} lang={lang} />}
 
-      {/* Floating Modern Nav Dock */}
-      <div className="fixed top-4 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
-        <nav className="pointer-events-auto bg-white/70 dark:bg-[#111827]/70 backdrop-blur-xl border border-slate-200/50 dark:border-white/10 rounded-full shadow-lg shadow-teal-900/5 transition-all w-full max-w-4xl px-4 py-2 flex items-center justify-between">
-          <button onClick={() => setShowLanding(true)} className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-xl overflow-hidden">
-              <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-                <rect width="48" height="48" rx="12" fill="#0D9488"/>
-                <path d="M13 12h5v10h12V12h5v24h-5V27H18v9h-5V12z" fill="white" opacity="0.95"/>
-              </svg>
-            </div>
-            <span className="font-display font-semibold text-teal-700 text-lg group-hover:text-teal-600 transition-colors">Handova</span>
+      {/* Top bar: flat, full width, separated from the page by a rule */}
+      <header className="sticky top-0 z-50 bg-[var(--surface-1)] border-b border-[var(--border-strong)]">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between gap-2">
+          <button onClick={() => setShowLanding(true)} className="flex items-center gap-2 flex-shrink-0" aria-label="Handova home">
+            <Logo size={28} />
+            <span className="font-display text-[18px] text-teal-700 dark:text-teal-300 hidden min-[420px]:inline">Handova</span>
           </button>
 
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setShowAbout(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
-            >
-              <Info size={14} />
-              <span className="hidden sm:inline">{t(lang, "about")}</span>
-            </button>
-            <button
-              onClick={() => setAppPage("records")}
-              className={"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors " + (appPage === "records" ? "text-slate-800 bg-slate-100" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100")}
-            >
-              <History size={14} />
-              <span className="hidden sm:inline">Records</span>
-            </button>
-            <button
-              onClick={() => setAppPage("planner")}
-              className={"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors " + (appPage === "planner" ? "text-indigo-700 bg-indigo-50" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100")}
-            >
-              <ClipboardList size={14} />
-              <span className="hidden sm:inline">Planner</span>
-            </button>
-            <button
-              onClick={toggleDarkMode}
-              className="flex items-center justify-center w-8 h-8 rounded-full text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            >
-              {isDarkMode ? <Sun size={15} /> : <Moon size={15} />}
-            </button>
-            <button
-              onClick={() => setShowSettings(true)}
-              className="flex items-center justify-center w-8 h-8 rounded-full text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            >
-              <Settings size={15} />
-            </button>
-          </div>
-        </nav>
-      </div>
-
-      {/* Spacer to push content down below fixed nav */}
-      <div className="h-24"></div>
-
-      {/* Step bar — only on report page */}
-      {appPage === "report" && (
-        <div className="max-w-4xl mx-auto px-4 pb-4 flex items-center gap-2 justify-center sm:justify-start">
-            {STEPS_KEYS.map((key, i) => (
-              <button key={key} id={`step-${i}`}
-                onClick={() => { if (i===0) setStep(0); if (i===1&&canProceed0) setStep(1); if (i===2) handleGoToReport(); }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 ${step===i?"step-pill-active":step>i?"step-pill-done":"step-pill-todo"}`}>
-                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${step>i?"bg-teal-600 text-white":step===i?"bg-teal-500 text-white":"bg-slate-200 text-slate-500"}`}>
-                  {step > i ? "✓" : i + 1}
-                </span>
-                {t(lang, key)}
-                {i < STEPS_KEYS.length - 1 && <ChevronRight size={10} className="text-slate-400 ml-0.5" />}
+          <nav className="flex items-center h-full" aria-label="Main">
+            {([
+              { id: "report", label: "Report", icon: <FileText size={16} /> },
+              { id: "planner", label: "Planner", icon: <ClipboardList size={16} /> },
+              { id: "records", label: "Records", icon: <History size={16} /> },
+            ] as const).map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setAppPage(item.id)}
+                aria-current={appPage === item.id ? "page" : undefined}
+                aria-label={item.label}
+                className={"h-full flex items-center gap-1.5 px-2.5 sm:px-3 text-sm font-bold border-b-[3px] -mb-px " + (appPage === item.id
+                  ? "border-teal-600 text-teal-800 dark:border-teal-400 dark:text-teal-300"
+                  : "border-transparent text-slate-600 hover:text-slate-900 dark:hover:text-white")}
+              >
+                {item.icon}
+                {/* On narrow screens only the current page shows its label, so everything fits */}
+                <span className={appPage === item.id ? "" : "hidden sm:inline"}>{item.label}</span>
               </button>
             ))}
-          </div>
-        )}
-        {appPage === "planner" && (
-          <div className="max-w-4xl mx-auto px-4 pb-3">
-            <button onClick={() => setAppPage("report")} className="text-[10px] text-slate-400 hover:text-slate-600 transition-colors">
-              ← Back to Shift Report
+            <span className="w-px h-6 bg-[var(--border-subtle)] mx-1" aria-hidden="true" />
+            <button onClick={() => setShowAbout(true)} aria-label="About Handova" className="flex items-center justify-center w-10 h-10 rounded-md text-slate-600 hover:bg-[var(--surface-3)]">
+              <Info size={18} />
             </button>
-          </div>
-        )}
-        {appPage === "records" && (
-          <div className="max-w-4xl mx-auto px-4 pb-3">
-            <button onClick={() => setAppPage("report")} className="text-[10px] text-slate-400 hover:text-slate-600 transition-colors">
-              ← Back to Shift Report
+            <button onClick={toggleDarkMode} aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"} className="flex items-center justify-center w-10 h-10 rounded-md text-slate-600 hover:bg-[var(--surface-3)]">
+              {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
-          </div>
-        )}
-     
+            <button onClick={() => setShowSettings(true)} aria-label="Settings" className="flex items-center justify-center w-10 h-10 rounded-md text-slate-600 hover:bg-[var(--surface-3)]">
+              <Settings size={18} />
+            </button>
+          </nav>
+        </div>
+      </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      {/* Steps: a tab strip, report page only */}
+      {appPage === "report" && (
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 pt-4">
+          <ol className="flex border-b border-[var(--border-strong)]">
+            {STEPS_KEYS.map((key, i) => (
+              <li key={key} className="flex-1">
+                <button id={`step-${i}`}
+                  onClick={() => { if (i===0) setStep(0); if (i===1&&canProceed0) setStep(1); if (i===2) handleGoToReport(); }}
+                  aria-current={step === i ? "step" : undefined}
+                  className={`w-full flex items-center justify-center gap-2 py-3 text-sm -mb-px border-b-[3px] ${step===i?"step-pill-active":step>i?"step-pill-done border-transparent":"step-pill-todo border-transparent"}`}>
+                  <span className="tabular-nums font-bold">{step > i ? "\u2713" : i + 1}</span>
+                  <span className="font-bold">{t(lang, key)}</span>
+                </button>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
+      <main className="max-w-4xl mx-auto px-3 sm:px-4 py-6">
 
         {/* Records page */}
         {appPage === "records" && (
@@ -316,26 +292,20 @@ export default function App() {
           <div className="space-y-6">
             {/* Mode selector */}
             <div className="fade-up">
-              <div className="flex items-center bg-slate-100 rounded-xl p-1 gap-1 mb-6">
+              <div className="flex border border-[var(--border-strong)] rounded-md overflow-hidden mb-6" role="group" aria-label="Report mode">
                 <button
                   onClick={() => setAppMode("quick")}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
-                    appMode === "quick"
-                      ? "bg-white text-teal-700 shadow-sm border border-slate-200"
-                      : "text-slate-500 hover:text-slate-700"
-                  }`}
+                  aria-pressed={appMode === "quick"}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold ${appMode === "quick" ? "bg-teal-600 text-white dark:bg-teal-500 dark:text-[#04201A]" : "bg-[var(--surface-1)] text-slate-700 hover:bg-[var(--surface-3)]"}`}
                 >
-                  ⚡ Quick Mode
+                  <Zap size={16} /> Quick mode
                 </button>
                 <button
                   onClick={() => setAppMode("structured")}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
-                    appMode === "structured"
-                      ? "bg-white text-teal-700 shadow-sm border border-slate-200"
-                      : "text-slate-500 hover:text-slate-700"
-                  }`}
+                  aria-pressed={appMode === "structured"}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold border-l border-[var(--border-strong)] ${appMode === "structured" ? "bg-teal-600 text-white dark:bg-teal-500 dark:text-[#04201A]" : "bg-[var(--surface-1)] text-slate-700 hover:bg-[var(--surface-3)]"}`}
                 >
-                  ✍️ Structured Mode
+                  <ListChecks size={16} /> Structured mode
                 </button>
               </div>
             </div>

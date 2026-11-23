@@ -176,8 +176,8 @@ export function PerspectiveCard({
     <article className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4 space-y-3">
       <header className="space-y-1">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-bold text-indigo-700 uppercase tracking-wide">{p.specialtyLabel}</span>
-          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 uppercase tracking-wider">
+          <span className="text-xs font-bold text-indigo-700 ">{p.specialtyLabel}</span>
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 ">
             AI-generated suggestion
           </span>
         </div>

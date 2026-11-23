@@ -26,7 +26,7 @@ interface PatientFormProps {
 function Field({ label, children, required }: { label: string; children: React.ReactNode; required?: boolean }) {
   return (
     <div>
-      <label className="block text-[10px] font-700 text-slate-500 mb-1.5 uppercase tracking-widest">
+      <label className="block text-[10px] font-700 text-slate-500 mb-1.5 ">
         {label}{required && <span className="text-teal-500 ml-0.5">*</span>}
       </label>
       {children}
@@ -44,7 +44,7 @@ function ConditionBadge({ condition }: { condition: string }) {
   };
   const cls = map[condition] || "badge-fair";
   return (
-    <span className={`${cls} text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider`}>
+    <span className={`${cls} text-[10px] font-bold px-2.5 py-1 rounded-full `}>
       {condition}
     </span>
   );
@@ -109,7 +109,7 @@ export default function PatientForm({ patientId, index, header, onUpdate, onRemo
           <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
             {data.conditionAtReport && <ConditionBadge condition={data.conditionAtReport} />}
             {noteReady && (
-              <span className="inline-flex items-center gap-1 text-[10px] bg-teal-500/10 text-teal-400 border border-teal-500/20 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">
+              <span className="inline-flex items-center gap-1 text-[10px] bg-teal-500/10 text-teal-400 border border-teal-500/20 px-2.5 py-1 rounded-full font-bold ">
                 <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
                 {format !== "standard" ? `${format.toUpperCase()} ready` : "Note ready"}
               </span>
@@ -154,7 +154,7 @@ export default function PatientForm({ patientId, index, header, onUpdate, onRemo
           {/* FAST PATH — 3 required fields only */}
           <div className="space-y-3">
             <div className="flex items-center gap-2 mb-1">
-              <div style={{ width: '3px', height: '14px', background: 'linear-gradient(180deg, #14B8A6, #0F766E)', borderRadius: '2px', flexShrink: 0 }} />
+              <div style={{ width: '3px', height: '14px', background: '#0E5A49', borderRadius: '2px', flexShrink: 0 }} />
               <span className="section-label">Patient essentials</span>
             </div>
 
@@ -188,7 +188,7 @@ export default function PatientForm({ patientId, index, header, onUpdate, onRemo
           <div>
             <div className="flex items-center justify-between mb-3" style={{ paddingBottom: '10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
               <div className="flex items-center gap-2">
-                <div style={{ width: '3px', height: '14px', background: 'linear-gradient(180deg, #14B8A6, #0F766E)', borderRadius: '2px', flexShrink: 0 }} />
+                <div style={{ width: '3px', height: '14px', background: '#0E5A49', borderRadius: '2px', flexShrink: 0 }} />
                 <span className="section-label">Shift events</span>
                 <span className="text-[10px] text-teal-600 normal-case tracking-normal font-normal">— raw notes for AI</span>
               </div>
@@ -425,7 +425,7 @@ export default function PatientForm({ patientId, index, header, onUpdate, onRemo
                     </div>
 
                     <div className="mt-3">
-                      <label className="block text-[10px] font-700 text-slate-500 mb-2 uppercase tracking-widest">Condition at Report</label>
+                      <label className="block text-[10px] font-700 text-slate-500 mb-2 ">Condition at Report</label>
                       <div className="flex flex-wrap gap-2">
                         {CONDITION_OPTIONS.map(c => {
                           const map: Record<string, string> = {
@@ -437,7 +437,7 @@ export default function PatientForm({ patientId, index, header, onUpdate, onRemo
                             <button
                               key={c}
                               onClick={() => setField("conditionAtReport", c as ConditionAtReport)}
-                              className={`text-[11px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider transition-all duration-150 ${
+                              className={`text-[11px] font-bold px-3 py-1.5 rounded-full transition-all duration-150 ${
                                 isActive
                                   ? `${map[c]} scale-105 shadow-sm`
                                   : "bg-slate-50 border border-slate-200 text-slate-500 hover:border-teal-300 hover:text-slate-700"

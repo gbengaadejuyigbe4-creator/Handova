@@ -212,14 +212,14 @@ function PlannerModal({ entry, onClose }: { entry: PlannerHistoryEntry; onClose:
         <div className="overflow-y-auto flex-1 bg-white divide-y divide-slate-100">
           {/* Summary */}
           <div className="px-6 py-4 bg-indigo-50/50">
-            <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider mb-1">Clinical Summary</p>
+            <p className="text-[10px] font-bold text-indigo-500 mb-1">Clinical Summary</p>
             <p className="text-xs text-indigo-900 leading-relaxed">{entry.plan.summary}</p>
           </div>
 
           {/* Interventions */}
           <div>
             <div className="px-6 py-3 bg-slate-50 border-b border-slate-100">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              <p className="text-[10px] font-bold text-slate-500 ">
                 Care Plan — {entry.plan.plan.length} interventions
               </p>
             </div>
@@ -230,10 +230,10 @@ function PlannerModal({ entry, onClose }: { entry: PlannerHistoryEntry; onClose:
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider ${PRIORITY_COLOURS[item.priority] || "text-slate-500 bg-slate-50 border-slate-200"}`}>
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${PRIORITY_COLOURS[item.priority] || "text-slate-500 bg-slate-50 border-slate-200"}`}>
                       {item.priority}
                     </span>
-                    <span className="flex items-center gap-0.5 text-[9px] font-semibold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                    <span className="flex items-center gap-0.5 text-[9px] font-semibold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded ">
                       {CATEGORY_ICONS[item.category]}
                       {item.category}
                     </span>
@@ -250,7 +250,7 @@ function PlannerModal({ entry, onClose }: { entry: PlannerHistoryEntry; onClose:
             <div className="px-6 py-4 bg-red-50/50">
               <div className="flex items-center gap-2 mb-2">
                 <AlertTriangle size={12} className="text-red-500" />
-                <p className="text-[10px] font-bold text-red-600 uppercase tracking-wider">Escalation Triggers</p>
+                <p className="text-[10px] font-bold text-red-600 ">Escalation Triggers</p>
               </div>
               {entry.plan.escalationTriggers.map((t, i) => (
                 <p key={i} className="text-xs text-red-800 leading-relaxed mb-1">• {t}</p>
@@ -262,7 +262,7 @@ function PlannerModal({ entry, onClose }: { entry: PlannerHistoryEntry; onClose:
           {entry.plan.endOfShiftNote && (
             <div className="px-6 py-4 bg-teal-50/50">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-[10px] font-bold text-teal-600 uppercase tracking-wider">End-of-Shift Note</p>
+                <p className="text-[10px] font-bold text-teal-600 ">End-of-Shift Note</p>
                 <button
                   onClick={handleCopyNote}
                   className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold bg-white border border-teal-200 text-teal-600 hover:bg-teal-50 transition-colors"
@@ -330,7 +330,7 @@ export default function RecordsPage({ initialTab = "reports" }: RecordsPageProps
           <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center">
             <History size={14} className="text-slate-600" />
           </div>
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Records</span>
+          <span className="text-[10px] font-bold text-slate-500 ">Records</span>
         </div>
         <h1 className="font-display text-3xl font-semibold text-slate-900 mb-1">Your Records</h1>
         <p className="text-sm text-slate-500">

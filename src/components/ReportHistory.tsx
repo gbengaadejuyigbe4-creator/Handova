@@ -81,7 +81,7 @@ export default function ReportHistory() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4 min-w-0">
                   <div className="flex-shrink-0 text-center">
-                    <p className="text-xs text-slate-600 uppercase tracking-wider">{entry.shift || "—"}</p>
+                    <p className="text-xs text-slate-600 ">{entry.shift || "—"}</p>
                     <p className="text-sm font-semibold text-white">{formatDate(entry.date)}</p>
                   </div>
                   <div className="w-px h-8 bg-white/8 flex-shrink-0" />

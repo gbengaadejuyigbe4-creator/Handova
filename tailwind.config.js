@@ -1,66 +1,45 @@
 /** @type {import('tailwindcss').Config} */
+
+// Handova design tokens.
+//
+// Colour meaning (keep it this way):
+//   teal    = the app's one action colour (deep "scrub" green): buttons, selected states, links
+//   indigo  = steel blue, used for AI-generated and planning content
+//   amber   = caution          red = critical          green = stable
+// Colour names teal/indigo are kept so existing class names keep working.
+//
+// Type: Atkinson Hyperlegible Next, designed for low-vision legibility. It suits tired eyes,
+// small phone screens and night shifts. It is bundled with the app, so it works offline.
+const FONT = ['"Atkinson Hyperlegible Next Variable"', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'];
+
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}", "!./src/utils/emrExtract.ts"],
   darkMode: 'class',
   theme: {
     extend: {
-      fontFamily: {
-        display: ['Outfit', 'sans-serif'],
-        body: ['Inter', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
-        // Fallbacks if ever needed
-        oldDisplay: ['Fraunces', 'serif'],
-        oldBody: ['DM Sans', 'sans-serif'],
-      },
+      fontFamily: { display: FONT, body: FONT, mono: FONT },
       colors: {
-        navy: {
-          950: '#010C1A',
-          900: '#021428',
-          800: '#042038',
-          700: '#073260',
+        navy: { 950: '#010C1A', 900: '#021428', 800: '#042038', 700: '#073260' },
+        teal: {
+          50: '#EAF4F1', 100: '#D3E8E2', 200: '#AACFC4', 300: '#7BB3A4', 400: '#4A9483',
+          500: '#1F7A65', 600: '#0E5A49', 700: '#0A4638', 800: '#073A2F', 900: '#052C24', 950: '#031A15',
         },
-        primary: {
-          50: '#f0fdfa',
-          100: '#ccfbf1',
-          200: '#99f6e4',
-          300: '#5eead4',
-          400: '#2dd4bf',
-          500: '#14b8a6', // Core Teal
-          600: '#0d9488',
-          700: '#0f766e',
-          800: '#115e59',
-          900: '#134e4a',
-          950: '#042f2e',
+        indigo: {
+          50: '#EEF3F9', 100: '#DCE7F3', 200: '#B9CFE6', 300: '#8FB0D4', 400: '#5E8BBC',
+          500: '#3B6EA5', 600: '#2A5788', 700: '#1F446C', 800: '#17344F', 900: '#112841', 950: '#0A1A2B',
         },
-        dark: {
-          bg: '#0A0E17',
-          surface: '#111827',
-          hover: '#1F2937',
-          border: '#374151'
-        }
+        dark: { bg: '#0F161D', surface: '#16202A', hover: '#1B2733', border: '#3B4C5C' },
       },
+      borderRadius: { xl: '10px', '2xl': '12px', '3xl': '14px' },
       boxShadow: {
-        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.05)',
-        'glass-dark': '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
-        'glow': '0 0 20px rgba(20, 184, 166, 0.3)',
-        'glow-primary': '0 8px 24px -8px rgba(20, 184, 166, 0.6)',
+        sm: '0 1px 0 rgba(20, 32, 43, 0.04)',
+        DEFAULT: '0 1px 2px rgba(20, 32, 43, 0.06)',
+        md: '0 2px 8px rgba(20, 32, 43, 0.08)',
+        lg: '0 6px 18px rgba(20, 32, 43, 0.12)',
+        xl: '0 10px 28px rgba(20, 32, 43, 0.14)',
+        '2xl': '0 14px 36px rgba(20, 32, 43, 0.16)',
+        glass: 'none', 'glass-dark': 'none', glow: 'none', 'glow-primary': 'none',
       },
-      animation: {
-        'blob': 'blob 7s infinite',
-        'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
-      },
-      keyframes: {
-        blob: {
-          '0%': { transform: 'translate(0px, 0px) scale(1)' },
-          '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
-          '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
-          '100%': { transform: 'translate(0px, 0px) scale(1)' },
-        },
-        fadeInUp: {
-          '0%': { opacity: 0, transform: 'translateY(20px)' },
-          '100%': { opacity: 1, transform: 'translateY(0)' },
-        }
-      }
     },
   },
   plugins: [],

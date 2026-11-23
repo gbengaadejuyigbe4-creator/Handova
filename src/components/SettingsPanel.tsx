@@ -74,7 +74,7 @@ export default function SettingsPanel({ onClose, onSettingsChange, lang }: Setti
           <section>
             <div className="flex items-center gap-2 mb-4">
               <Globe size={15} className="text-teal-600" />
-              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">{t(lang, "language")}</h3>
+              <h3 className="text-sm font-bold text-slate-800 ">{t(lang, "language")}</h3>
             </div>
             <div className="grid grid-cols-3 gap-2">
               {LANGUAGES.map(l => (
@@ -98,7 +98,7 @@ export default function SettingsPanel({ onClose, onSettingsChange, lang }: Setti
           <section>
             <div className="flex items-center gap-2 mb-1">
               <MapPin size={15} className="text-teal-600" />
-              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Region</h3>
+              <h3 className="text-sm font-bold text-slate-800 ">Region</h3>
             </div>
             <p className="text-[10px] text-slate-400 mb-4">
               Sets your report format, clinical language, and compliance framework automatically.
@@ -134,15 +134,15 @@ export default function SettingsPanel({ onClose, onSettingsChange, lang }: Setti
           <section>
             <div className="flex items-center gap-2 mb-4">
               <User size={15} className="text-teal-600" />
-              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">{t(lang, "profile")}</h3>
+              <h3 className="text-sm font-bold text-slate-800 ">{t(lang, "profile")}</h3>
             </div>
             <div className="space-y-3">
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">{t(lang, "nurseName")}</label>
+                <label className="block text-[10px] font-bold text-slate-500 mb-1.5 ">{t(lang, "nurseName")}</label>
                 {inp("nurseName", "e.g. Gbenga Adejuyigbe")}
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">{t(lang, "nurseCredentials")}</label>
+                <label className="block text-[10px] font-bold text-slate-500 mb-1.5 ">{t(lang, "nurseCredentials")}</label>
                 {inp("nurseCredentials", "e.g. RN, BNSc")}
               </div>
             </div>
@@ -152,7 +152,7 @@ export default function SettingsPanel({ onClose, onSettingsChange, lang }: Setti
           <section>
             <div className="flex items-center gap-2 mb-4">
               <Building2 size={15} className="text-teal-600" />
-              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">{t(lang, "facilityName")}</h3>
+              <h3 className="text-sm font-bold text-slate-800 ">{t(lang, "facilityName")}</h3>
             </div>
             {inp("facilityName", t(lang, "facilityNamePlaceholder"))}
           </section>
@@ -161,14 +161,14 @@ export default function SettingsPanel({ onClose, onSettingsChange, lang }: Setti
           <section>
             <div className="flex items-center gap-2 mb-1">
               <Clock size={15} className="text-teal-600" />
-              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Shift Period</h3>
+              <h3 className="text-sm font-bold text-slate-800 ">Shift Period</h3>
             </div>
             <p className="text-[10px] text-slate-400 mb-4">
               Used by the Shift Planner to schedule time-based nursing interventions. You can also set this per-planner session.
             </p>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">Shift Start</label>
+                <label className="block text-[10px] font-bold text-slate-500 mb-1.5 ">Shift Start</label>
                 <input
                   type="time"
                   value={settings.shiftStartTime || ""}
@@ -177,7 +177,7 @@ export default function SettingsPanel({ onClose, onSettingsChange, lang }: Setti
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">Shift End</label>
+                <label className="block text-[10px] font-bold text-slate-500 mb-1.5 ">Shift End</label>
                 <input
                   type="time"
                   value={settings.shiftEndTime || ""}
@@ -195,11 +195,11 @@ export default function SettingsPanel({ onClose, onSettingsChange, lang }: Setti
           <section>
             <div className="flex items-center gap-2 mb-4">
               <Stethoscope size={15} className="text-teal-600" />
-              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Defaults</h3>
+              <h3 className="text-sm font-bold text-slate-800 ">Defaults</h3>
             </div>
             <div className="space-y-3">
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">{t(lang, "defaultWard")}</label>
+                <label className="block text-[10px] font-bold text-slate-500 mb-1.5 ">{t(lang, "defaultWard")}</label>
                 <select value={settings.defaultWard} onChange={e => set("defaultWard", e.target.value)} className="select-field">
                   <option value="">No default</option>
                   {WARDS.filter(w => w !== "Other").map(w => <option key={w}>{w}</option>)}
@@ -207,14 +207,14 @@ export default function SettingsPanel({ onClose, onSettingsChange, lang }: Setti
                 <p className="text-[10px] text-slate-400 mt-1">{t(lang, "defaultWardHint")}</p>
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">{t(lang, "defaultShift")}</label>
+                <label className="block text-[10px] font-bold text-slate-500 mb-1.5 ">{t(lang, "defaultShift")}</label>
                 <select value={settings.defaultShift} onChange={e => set("defaultShift", e.target.value)} className="select-field">
                   <option value="">No default</option>
                   {SHIFTS.map(s => <option key={s}>{s}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">{t(lang, "defaultFormat")}</label>
+                <label className="block text-[10px] font-bold text-slate-500 mb-1.5 ">{t(lang, "defaultFormat")}</label>
                 <div className="flex items-center bg-slate-100 rounded-xl p-1 gap-1">
                   {(getRegionConfig(settings.region || "ng").formats).map(fmt => (
                     <button

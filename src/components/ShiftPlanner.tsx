@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { extractFromEmrPdf } from "../utils/emrExtract";
 import SpecialistSection from "./SpecialistSection";
+import { Minus, TrendingDown, TrendingUp } from "lucide-react";
 import { savePlannerEntry, loadPlannerHistory } from "../utils/storage";
 import type { AppSettings } from "../utils/settings";
 
@@ -319,7 +320,7 @@ function PredictiveFlagsPanel({ flags }: { flags: FlagsResult }) {
       <button
         onClick={() => setExpanded(p => !p)}
         className="w-full flex items-center justify-between px-4 py-3 text-left"
-        style={{ background: 'linear-gradient(135deg, #FFF1F2, #FFF8F8)' }}
+        style={{ background: '#FFF4F3' }}
       >
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-7 h-7 rounded-lg bg-red-100 border border-red-200 flex items-center justify-center flex-shrink-0">
@@ -327,7 +328,7 @@ function PredictiveFlagsPanel({ flags }: { flags: FlagsResult }) {
           </div>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
             <span className="text-xs font-bold text-red-800 whitespace-nowrap">Predictive Clinical Flags</span>
-            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 uppercase tracking-wider whitespace-nowrap">AI draft</span>
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 whitespace-nowrap">AI draft</span>
             <span className="text-[11px] text-red-600 whitespace-nowrap">— {flags.flags.length} flag{flags.flags.length !== 1 ? "s" : ""} detected</span>
           </div>
         </div>
@@ -342,8 +343,8 @@ function PredictiveFlagsPanel({ flags }: { flags: FlagsResult }) {
       {expanded && (
         <div className="px-4 pb-4 space-y-3 pt-1">
           <p className="text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 leading-relaxed">
-            <span className="sm:hidden">⚠ AI draft. Verify against the chart before acting. Not a validated rule.</span>
-            <span className="hidden sm:inline">⚠ {flags.notice || "AI-generated draft. Verify against the patient's chart before acting. Not a validated clinical rule."}</span>
+            <span className="sm:hidden">AI draft. Verify against the chart before acting. Not a validated rule.</span>
+            <span className="hidden sm:inline">{flags.notice || "AI-generated draft. Verify against the patient's chart before acting. Not a validated clinical rule."}</span>
           </p>
           <p className="text-[11px] text-red-700 italic leading-relaxed">{flags.riskSummary}</p>
           {flags.flags.map((flag, i) => {
@@ -355,7 +356,7 @@ function PredictiveFlagsPanel({ flags }: { flags: FlagsResult }) {
                     <Shield size={12} className={style.icon} />
                     <span className="text-xs font-bold text-slate-800">{flag.title}</span>
                   </div>
-                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${style.badge}`}>
+                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${style.badge}`}>
                     {flag.severity}
                   </span>
                 </div>
@@ -396,11 +397,11 @@ function HandoverBriefPanel({
 
   return (
     <div className="rounded-2xl border border-indigo-200 overflow-hidden fade-up"
-      style={{ background: 'linear-gradient(145deg, #EEF2FF, #FFFFFF)', boxShadow: '0 4px 24px rgba(99,102,241,0.10)' }}>
+      style={{ background: '#F3F7FB' }}>
 
       {/* Header */}
       <div className="px-5 py-4 border-b border-indigo-100 flex items-center justify-between"
-        style={{ background: 'linear-gradient(135deg, #EEF2FF, #E0E7FF)' }}>
+        style={{ background: '#E4ECF5' }}>
         <div className="flex items-center gap-3">
           <div className="icon-container-indigo">
             <ClipboardList size={16} className="text-indigo-600" />
@@ -411,7 +412,7 @@ function HandoverBriefPanel({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${COMPLEXITY_COLOURS[brief.shiftComplexity]}`}>
+          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${COMPLEXITY_COLOURS[brief.shiftComplexity]}`}>
             {brief.shiftComplexity} complexity
           </span>
           <button onClick={onCopy}
@@ -442,7 +443,7 @@ function HandoverBriefPanel({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1.5">
                     <p className={`text-xs font-bold ${style.text}`}>{item.patientName}</p>
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider border ${style.border} ${style.text}`}>
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${style.border} ${style.text}`}>
                       {item.priority}
                     </span>
                   </div>
@@ -678,7 +679,7 @@ export default function ShiftPlanner({ settings }: ShiftPlannerProps) {
       // If escalation needed, flag it prominently
       if (data.escalate) {
         updatePatient(patientId, {
-          updateError: `🚨 ESCALATE NOW: ${data.escalationReason}`,
+          updateError: `ESCALATE NOW: ${data.escalationReason}`,
         });
       }
 
@@ -735,7 +736,7 @@ export default function ShiftPlanner({ settings }: ShiftPlannerProps) {
       "HANDOVER BRIEF",
       `Shift: ${shiftStart || "—"} – ${shiftEnd || "—"} · Complexity: ${handoverBrief.shiftComplexity}`,
       "",
-      `⚡ ${handoverBrief.mostImportant}`,
+      `${handoverBrief.mostImportant}`,
       "",
       ...handoverBrief.brief.map(b => [
         `${b.emoji} ${b.patientName} — ${b.priority}`,
@@ -760,13 +761,7 @@ export default function ShiftPlanner({ settings }: ShiftPlannerProps) {
 
       {/* Header */}
       <div className="fade-up">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="icon-container-indigo" style={{ width: 32, height: 32, borderRadius: 11 }}>
-            <ClipboardList size={15} className="text-indigo-600" />
-          </div>
-          <span className="section-label text-indigo-700">Shift Planner</span>
-        </div>
-        <h1 className="font-display text-3xl font-semibold text-slate-900 mb-1">Nursing Care Plans</h1>
+        <h1 className="font-display text-3xl font-semibold text-slate-900 dark:text-slate-100 mb-1">Nursing care plans</h1>
         <p className="text-sm text-slate-500">
           Upload each patient's HMS PDF. Predictive flags, evidence-based care plans, and a risk-stratified handover brief — all generated automatically.
         </p>
@@ -776,27 +771,27 @@ export default function ShiftPlanner({ settings }: ShiftPlannerProps) {
       <div className="card space-y-4">
         <div className="flex items-center gap-2">
           <Clock size={14} className="text-teal-600" />
-          <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Shift Context</span>
+          <span className="text-xs font-bold text-slate-700 ">Shift Context</span>
           <span className="ml-auto text-[11px] text-slate-400 font-mono">Now: {currentTime}</span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">Shift Start</label>
+            <label className="block text-[10px] font-bold text-slate-500 mb-1.5 ">Shift Start</label>
             <input type="time" value={shiftStart} onChange={e => setShiftStart(e.target.value)} className="input-field cursor-pointer" />
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">Shift End</label>
+            <label className="block text-[10px] font-bold text-slate-500 mb-1.5 ">Shift End</label>
             <input type="time" value={shiftEnd} onChange={e => setShiftEnd(e.target.value)} className="input-field cursor-pointer" />
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">
+            <label className="block text-[10px] font-bold text-slate-500 mb-1.5 ">
               <Users size={9} className="inline mr-1" />Nurses on duty
             </label>
             <input type="number" min="1" max="20" value={nurseCount} onChange={e => setNurseCount(e.target.value)}
               placeholder="e.g. 2" className="input-field" />
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">Total ward patients</label>
+            <label className="block text-[10px] font-bold text-slate-500 mb-1.5 ">Total ward patients</label>
             <input type="number" min="1" max="50" value={totalPatients} onChange={e => setTotalPatients(e.target.value)}
               placeholder="e.g. 8" className="input-field" />
           </div>
@@ -975,7 +970,7 @@ function PatientCard({
 
           {/* Input mode switcher */}
           {!patient.extracted && !patient.isExtracting && !isProcessingText && (
-            <div className="flex rounded-lg border border-slate-200 overflow-hidden">
+            <div className="flex rounded-md border border-[var(--border-strong)] overflow-hidden" role="group" aria-label="How to add this patient">
               {([
                 { key: "pdf", label: "PDF" },
                 { key: "file", label: "Text/Word" },
@@ -984,8 +979,9 @@ function PatientCard({
                 <button
                   key={m.key}
                   onClick={() => setInputMode(m.key)}
-                  className={`flex-1 py-2 text-[10px] font-semibold transition-colors ${
-                    inputMode === m.key ? "bg-indigo-600 text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                  aria-pressed={inputMode === m.key}
+                  className={`flex-1 py-2.5 text-sm font-bold border-l first:border-l-0 border-[var(--border-strong)] ${
+                    inputMode === m.key ? "bg-teal-600 text-white dark:bg-teal-500 dark:text-[#04201A]" : "bg-[var(--surface-1)] text-slate-700 hover:bg-[var(--surface-3)]"
                   }`}
                 >
                   {m.label}
@@ -1170,7 +1166,7 @@ function PatientCard({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Eye size={13} className="text-teal-600" />
-                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Current Patient Status</span>
+                  <span className="text-xs font-bold text-slate-700 ">Current Patient Status</span>
                 </div>
                 <button
                   onClick={() => voice.listening ? voice.stop() : voice.start(patient.nurseQueries)}
@@ -1240,7 +1236,7 @@ function PatientCard({
             <div className="space-y-3 fade-up">
               {/* Summary */}
               <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3">
-                <p className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider mb-1">Clinical Summary</p>
+                <p className="text-[11px] font-bold text-indigo-600 mb-1">Clinical Summary</p>
                 <p className="text-xs text-indigo-900 leading-relaxed">{patient.plan.summary}</p>
                 <div className="flex items-center gap-2 mt-2">
                   <span className="text-[11px] font-bold text-indigo-700">
@@ -1255,7 +1251,7 @@ function PatientCard({
               {/* Timeline */}
               <div className="rounded-xl border border-slate-200 overflow-hidden">
                 <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Time-Structured Interventions</span>
+                  <span className="text-[10px] font-bold text-slate-500 ">Time-Structured Interventions</span>
                 </div>
                 {patient.plan.plan.map((item, index) => {
                   const isDone = patient.checkedItems.has(index);
@@ -1278,15 +1274,15 @@ function PatientCard({
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider ${PRIORITY_STYLES[item.priority]}`}>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${PRIORITY_STYLES[item.priority]}`}>
                             {item.priority}
                           </span>
-                          <span className={`flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded uppercase tracking-wider ${CATEGORY_STYLES[item.category] || "bg-slate-100 text-slate-600"}`}>
+                          <span className={`flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded ${CATEGORY_STYLES[item.category] || "bg-slate-100 text-slate-600"}`}>
                             {CATEGORY_ICONS[item.category]}
                             {item.category}
                           </span>
                           {isPast && !isDone && (
-                            <span className="text-[9px] font-bold text-red-600 uppercase tracking-wider">OVERDUE</span>
+                            <span className="text-[9px] font-bold text-red-600 ">OVERDUE</span>
                           )}
                         </div>
                         <p className={`text-xs leading-relaxed ${isDone ? "line-through text-slate-400" : "text-slate-800"}`}>
@@ -1307,13 +1303,13 @@ function PatientCard({
                   patient.plan.prognosisTrend === "STATIC" ? "border-amber-200 bg-amber-50" :
                   "border-slate-200 bg-slate-50"
                 }`}>
-                  <span className="text-lg">
-                    {patient.plan.prognosisTrend === "IMPROVING" ? "📈" :
-                     patient.plan.prognosisTrend === "DETERIORATING" ? "📉" :
-                     patient.plan.prognosisTrend === "STATIC" ? "➡️" : "❓"}
+                  <span className="flex-shrink-0">
+                    {patient.plan.prognosisTrend === "IMPROVING" ? <TrendingUp size={20} /> :
+                     patient.plan.prognosisTrend === "DETERIORATING" ? <TrendingDown size={20} /> :
+                     <Minus size={20} />}
                   </span>
                   <div>
-                    <span className="text-xs font-bold uppercase tracking-wider">Prognosis Trend: {patient.plan.prognosisTrend}</span>
+                    <span className="text-xs font-bold ">Prognosis Trend: {patient.plan.prognosisTrend}</span>
                     {patient.plan.clinicalTimeline && (
                       <p className="text-xs text-slate-600 mt-0.5">{patient.plan.clinicalTimeline}</p>
                     )}
@@ -1324,11 +1320,11 @@ function PatientCard({
               {/* Data Prompts — gentle requests for missing data */}
               {patient.plan.dataPrompts && patient.plan.dataPrompts.length > 0 && (
                 <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3.5 space-y-2">
-                  <span className="text-xs font-bold text-sky-800 uppercase tracking-wider">💬 Handova Needs a Few Things</span>
+                  <span className="text-xs font-bold text-sky-800 ">Handova Needs a Few Things</span>
                   <p className="text-[10px] text-sky-700">These are optional — but having them will make this plan sharper:</p>
                   {patient.plan.dataPrompts.map((dp, i) => (
                     <div key={i} className="flex gap-2 items-start">
-                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider flex-shrink-0 mt-0.5 ${
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 mt-0.5 ${
                         dp.priority === "HIGH" ? "bg-orange-100 text-orange-700" : "bg-sky-100 text-sky-700"
                       }`}>{dp.priority}</span>
                       <div>
@@ -1344,7 +1340,7 @@ function PatientCard({
               {patient.plan.nursePriorities && patient.plan.nursePriorities.length > 0 && (
                 <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3.5 space-y-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-blue-800 uppercase tracking-wider">🎯 Nursing Priorities This Shift</span>
+                    <span className="text-xs font-bold text-blue-800 ">Nursing Priorities This Shift</span>
                   </div>
                   {patient.plan.nursePriorities.map((p, i) => (
                     <div key={i} className="flex gap-2">
@@ -1362,12 +1358,12 @@ function PatientCard({
               {patient.plan.drugSafetyFlags && patient.plan.drugSafetyFlags.length > 0 && (
                 <div className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-3.5 space-y-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-orange-800 uppercase tracking-wider">⚠ Drug Safety — AI Generated · Verify Clinically</span>
+                    <span className="text-xs font-bold text-orange-800 ">Drug Safety — AI Generated · Verify Clinically</span>
                   </div>
                   {patient.plan.drugSafetyFlags.map((flag, i) => (
                     <div key={i} className="border-l-2 border-orange-400 pl-3">
                       <div className="flex items-center gap-1.5 mb-0.5">
-                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
                           flag.type === "DRUG_DRUG" ? "bg-red-100 text-red-700" :
                           flag.type === "DRUG_DISEASE" ? "bg-orange-100 text-orange-700" :
                           "bg-yellow-100 text-yellow-700"
@@ -1388,7 +1384,7 @@ function PatientCard({
                 <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3.5 space-y-2">
                   <div className="flex items-center gap-2">
                     <AlertTriangle size={13} className="text-red-600" />
-                    <span className="text-xs font-bold text-red-800 uppercase tracking-wider">Escalation Triggers</span>
+                    <span className="text-xs font-bold text-red-800 ">Escalation Triggers</span>
                   </div>
                   {patient.plan.escalationTriggers.map((t, i) => (
                     <p key={i} className="text-xs text-red-800 leading-relaxed">• {t}</p>
@@ -1400,7 +1396,7 @@ function PatientCard({
               {patient.plan.endOfShiftNote && (
                 <div className="rounded-xl border border-teal-200 bg-teal-50 px-4 py-3.5 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-teal-700 uppercase tracking-wider">End-of-Shift Note</span>
+                    <span className="text-[11px] font-bold text-teal-700 ">End-of-Shift Note</span>
                     <button onClick={copyNote}
                       className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white border border-teal-200 text-teal-700 hover:bg-teal-50 transition-colors">
                       {noteCopied ? <Check size={10} /> : <Copy size={10} />}
@@ -1414,7 +1410,7 @@ function PatientCard({
               {/* Think for yourself */}
               {patient.plan.nurseThinkingPrompt && (
                 <div className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-3.5 space-y-2">
-                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">🧠 Your Clinical Judgment</span>
+                  <span className="text-xs font-bold text-slate-700 ">Your Clinical Judgment</span>
                   <p className="text-xs text-slate-600 italic">{patient.plan.nurseThinkingPrompt}</p>
                   <textarea
                     rows={3}
@@ -1427,7 +1423,7 @@ function PatientCard({
               {/* Update History Timeline */}
               {patient.updateHistory && patient.updateHistory.length > 0 && (
                 <div className="rounded-xl border border-slate-200 bg-white px-4 py-3.5 space-y-3">
-                  <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">📋 Shift Update History</span>
+                  <span className="text-xs font-bold text-slate-600 ">Shift Update History</span>
                   {patient.updateHistory.map((u, i) => (
                     <div key={i} className="flex gap-3">
                       <div className="flex flex-col items-center">
@@ -1445,7 +1441,7 @@ function PatientCard({
               {/* Mid-shift Update Panel */}
               <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3.5 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-indigo-800 uppercase tracking-wider">🔄 Mid-Shift Update</span>
+                  <span className="text-xs font-bold text-indigo-800 ">Mid-Shift Update</span>
                   <button
                     onClick={() => setShowUpdateInput(p => !p)}
                     className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800"
@@ -1475,8 +1471,10 @@ function PatientCard({
                       >
                         {updateVoice.transcribing ? (
                           <Loader2 size={12} className="animate-spin" />
+                        ) : updateVoice.listening ? (
+                          <Square size={12} />
                         ) : (
-                          <span className="text-[10px]">{updateVoice.listening ? "⏹" : "🎤"}</span>
+                          <Mic size={12} />
                         )}
                       </button>
                     </div>
@@ -1490,7 +1488,7 @@ function PatientCard({
 
                     {patient.updateError && (
                       <div className={`rounded-lg px-3 py-2 text-xs font-medium ${
-                        patient.updateError.startsWith("🚨")
+                        patient.updateError.startsWith("ESCALATE NOW")
                           ? "bg-red-100 border border-red-300 text-red-800"
                           : "bg-red-50 border border-red-200 text-red-700"
                       }`}>

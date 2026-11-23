@@ -43,7 +43,7 @@ const STEPS: OnboardingStep[] = [
   },
   {
     title: "Full guide inside About",
-    desc: "Tap the ℹ️ About button in the top right anytime to open the full How to Use guide — covering Quick Mode, Voice, SBAR, Settings, and more.",
+    desc: "Tap the About button in the top right anytime to open the full How to Use guide — covering Quick Mode, Voice, SBAR, Settings, and more.",
     target: null,
     position: "center",
   },

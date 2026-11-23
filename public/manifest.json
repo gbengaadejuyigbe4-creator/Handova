@@ -4,8 +4,8 @@
   "description": "AI-Powered Nursing Shift Handover Documentation",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#020818",
-  "theme_color": "#14b8a6",
+  "background_color": "#F3F5F7",
+  "theme_color": "#0E5A49",
   "orientation": "any",
   "icons": [
     {

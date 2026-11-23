@@ -149,7 +149,7 @@ export default function QuickMode({ settings, onSwitchToStructured }: QuickModeP
             <div className="w-16" />
           </div>
           <div className="p-5 overflow-auto max-h-[55vh]">
-            <pre className="text-xs text-slate-700 leading-[1.9] whitespace-pre-wrap font-mono tracking-wide">
+            <pre className="text-xs text-slate-700 leading-[1.9] whitespace-pre-wrap font-mono ">
               {report}
             </pre>
           </div>
@@ -318,7 +318,7 @@ export default function QuickMode({ settings, onSwitchToStructured }: QuickModeP
           ) : (
             <>
               <div>
-                <p className="text-xs font-semibold text-slate-600 mb-2 uppercase tracking-wider">Select previous shift</p>
+                <p className="text-xs font-semibold text-slate-600 mb-2 ">Select previous shift</p>
                 <div className="space-y-2">
                   {history.slice(0, 3).map((entry) => (
                     <button
@@ -343,7 +343,7 @@ export default function QuickMode({ settings, onSwitchToStructured }: QuickModeP
 
               {selectedHistory && (
                 <div className="space-y-3">
-                  <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  <p className="text-xs font-semibold text-slate-600 ">
                     What changed this shift?
                   </p>
                   <div className="relative">
