@@ -13,7 +13,19 @@ interface OnboardingStep {
 const STEPS: OnboardingStep[] = [
   {
     title: "Welcome to Handova",
-    desc: "Generate professional nursing shift reports in under 5 minutes. Let's walk you through the 3-step process.",
+    desc: "Handova helps at both ends of your shift: a plan when it starts, a handover report when it ends. Here is a quick look.",
+    target: null,
+    position: "center",
+  },
+  {
+    title: "Start of shift: Shift planner",
+    desc: "Open Planner at the start of your shift. Upload each patient's record as a PDF and get risk flags, a nursing care plan and a handover brief for the ward.",
+    target: null,
+    position: "center",
+  },
+  {
+    title: "End of shift: Handover report",
+    desc: "Open Report at the end of your shift. It takes three steps, shown next. Home always suggests which tool to use next.",
     target: null,
     position: "center",
   },
@@ -43,7 +55,7 @@ const STEPS: OnboardingStep[] = [
   },
   {
     title: "Full guide inside About",
-    desc: "Tap the About button in the top right anytime to open the full How to Use guide — covering Quick Mode, Voice, SBAR, Settings, and more.",
+    desc: "Tap the About button (the i icon) at the top right anytime to open the full How to Use guide — covering Quick Mode, Voice, SBAR, Settings, and more.",
     target: null,
     position: "center",
   },

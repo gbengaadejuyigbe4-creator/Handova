@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { ArrowRight, Download, Share } from "lucide-react";
 import ReportHistory from "./ReportHistory";
 import Logo from "./Logo";
+import type { AppRoute } from "../utils/route";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -23,9 +24,9 @@ const CAPABILITIES = [
   { title: "Report formats", body: "Standard, SBAR or ISBAR, with wording for your region." },
 ];
 
-interface LandingPageProps { onEnterApp: () => void; }
+interface LandingPageProps { onOpen: (route: AppRoute) => void; }
 
-export default function LandingPage({ onEnterApp }: LandingPageProps) {
+export default function LandingPage({ onOpen }: LandingPageProps) {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
 
@@ -62,7 +63,7 @@ export default function LandingPage({ onEnterApp }: LandingPageProps) {
             <a href="#how-it-works" className="hidden sm:inline text-slate-600 hover:text-slate-900 dark:hover:text-white">How it works</a>
             <a href="#what-it-does" className="hidden sm:inline text-slate-600 hover:text-slate-900 dark:hover:text-white">What it does</a>
             <a href="#your-data" className="hidden sm:inline text-slate-600 hover:text-slate-900 dark:hover:text-white">Your data</a>
-            <button onClick={onEnterApp} className="btn-primary text-sm px-4 py-2 min-h-[40px]">Open Handova</button>
+            <button onClick={() => onOpen("home")} className="btn-primary text-sm px-4 py-2 min-h-[40px]">Open Handova</button>
           </nav>
         </div>
       </header>
@@ -73,15 +74,20 @@ export default function LandingPage({ onEnterApp }: LandingPageProps) {
           <div>
             <p className="text-sm font-bold text-teal-700 dark:text-teal-300 mb-4">Built by a practising nurse in Akure</p>
             <h1 className="font-display text-[34px] sm:text-[46px] leading-[1.1] mb-5">
-              Shift handover reports, drafted from your own notes.
+              Plan the shift. Write the handover.
             </h1>
             <p className="text-[17px] text-slate-700 dark:text-slate-300 leading-relaxed max-w-xl mb-7">
-              Speak or type what happened on your shift. Add the hospital record as a PDF. Handova drafts the report and the care plan. You check it, then paste it into your hospital system.
+              At the start of your shift, Handova drafts a nursing care plan from each patient's hospital record. At the end, it drafts your handover report from what you speak or type. You check both.
             </p>
-            <div className="flex flex-wrap items-center gap-3">
-              <button onClick={onEnterApp} className="btn-primary px-6">
-                Open Handova <ArrowRight size={16} />
+            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
+              <button onClick={() => onOpen("planner")} className="btn-primary px-6">
+                Start of shift: Shift planner <ArrowRight size={16} />
               </button>
+              <button onClick={() => onOpen("report")} className="btn-secondary px-6">
+                End of shift: Handover report <ArrowRight size={16} />
+              </button>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 mt-3">
               {installPrompt && !installed && (
                 <button onClick={handleInstall} className="btn-secondary">
                   <Download size={16} /> Add to home screen
@@ -98,16 +104,18 @@ export default function LandingPage({ onEnterApp }: LandingPageProps) {
             </p>
           </div>
 
-          <figure className="report-document" aria-label="Example report">
+          <figure className="report-document" aria-label="Example care plan">
             <div className="px-5 py-3 border-b border-[var(--border-subtle)] flex items-center justify-between gap-3">
-              <span className="text-sm font-bold">Shift report · Medical ward · Day</span>
+              <span className="text-sm font-bold">Care plan · Medical ward · Day</span>
               <span className="text-xs text-slate-600">Example, invented patient</span>
             </div>
             <div className="report-document-inner px-5 py-4 space-y-3 text-[15px]">
-              <p><b>Situation.</b> Demo Patient, 58, male. Decompensated heart failure, day 2.</p>
-              <p><b>Background.</b> On IV furosemide 40 mg twice daily and spironolactone 25 mg daily.</p>
-              <p><b>Assessment.</b> BP 150/90, pulse 96, respiratory rate 26, SpO2 93%. Intake and output chart requested; no totals documented yet.</p>
-              <p><b>Recommendation.</b> Continue strict intake and output. Raise the missing totals and the day 1 potassium with the doctor on the next round.</p>
+              <p><b>Demo Patient, 58, male.</b> Decompensated heart failure, day 2.</p>
+              <ul className="space-y-3">
+                <li><b>08:00 · High · Fluid balance.</b> Start a strict intake and output chart. No totals are documented yet.</li>
+                <li><b>09:00 · High · Monitoring.</b> Record vitals and oxygen saturation. Tell the doctor if breathing gets worse.</li>
+                <li><b>Doctor's round · Medium · Follow-up.</b> Ask about the day 1 potassium result. It is not in the record.</li>
+              </ul>
             </div>
             <figcaption className="px-5 py-3 border-t border-[var(--border-subtle)] text-xs text-slate-600">
               An AI draft for the nurse to check and edit.
@@ -115,10 +123,56 @@ export default function LandingPage({ onEnterApp }: LandingPageProps) {
           </figure>
         </section>
 
-        {/* How it works */}
-        <section id="how-it-works" className="border-t border-[var(--border-strong)] bg-[var(--surface-1)]">
+        {/* Two tools, one for each end of the shift */}
+        <section id="two-tools" className="border-t border-[var(--border-strong)] bg-[var(--surface-1)]">
           <div className="max-w-5xl mx-auto px-5 py-14">
-            <h2 className="font-display text-[28px] mb-8">How it works</h2>
+            <h2 className="font-display text-[28px] mb-8">Two tools for one shift</h2>
+            <div className="grid md:grid-cols-2 gap-10">
+              <div className="border-t-[3px] border-teal-600 dark:border-teal-400 pt-4">
+                <p className="text-sm font-bold text-teal-700 dark:text-teal-300 mb-1">Start of shift</p>
+                <h3 className="font-display text-[22px] mb-2">Shift planner</h3>
+                <p className="text-[15px] text-slate-700 dark:text-slate-300 leading-relaxed mb-5">
+                  Upload each patient's record as a PDF. Get risk flags, a nursing care plan and a handover brief for the whole ward.
+                </p>
+                <button onClick={() => onOpen("planner")} className="btn-primary">
+                  Open shift planner <ArrowRight size={16} />
+                </button>
+              </div>
+              <div className="border-t-[3px] border-teal-600 dark:border-teal-400 pt-4">
+                <p className="text-sm font-bold text-teal-700 dark:text-teal-300 mb-1">End of shift</p>
+                <h3 className="font-display text-[22px] mb-2">Handover report</h3>
+                <p className="text-[15px] text-slate-700 dark:text-slate-300 leading-relaxed mb-5">
+                  Speak or type what happened. Handova drafts the report in the format your hospital uses. You check it, then paste it into your hospital system.
+                </p>
+                <button onClick={() => onOpen("report")} className="btn-secondary">
+                  Open handover report <ArrowRight size={16} />
+                </button>
+                <div className="mt-6">
+          <figure className="report-document" aria-label="Example report">
+              <div className="px-5 py-3 border-b border-[var(--border-subtle)] flex items-center justify-between gap-3">
+                <span className="text-sm font-bold">Shift report · Medical ward · Day</span>
+                <span className="text-xs text-slate-600">Example, invented patient</span>
+              </div>
+              <div className="report-document-inner px-5 py-4 space-y-3 text-[15px]">
+                <p><b>Situation.</b> Demo Patient, 58, male. Decompensated heart failure, day 2.</p>
+                <p><b>Background.</b> On IV furosemide 40 mg twice daily and spironolactone 25 mg daily.</p>
+                <p><b>Assessment.</b> BP 150/90, pulse 96, respiratory rate 26, SpO2 93%. Intake and output chart requested; no totals documented yet.</p>
+                <p><b>Recommendation.</b> Continue strict intake and output. Raise the missing totals and the day 1 potassium with the doctor on the next round.</p>
+              </div>
+              <figcaption className="px-5 py-3 border-t border-[var(--border-subtle)] text-xs text-slate-600">
+                An AI draft for the nurse to check and edit.
+              </figcaption>
+            </figure>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* How it works */}
+        <section id="how-it-works" className="border-t border-[var(--border-strong)]">
+          <div className="max-w-5xl mx-auto px-5 py-14">
+            <h2 className="font-display text-[28px] mb-8">How the handover report works</h2>
             <ol className="grid md:grid-cols-3 gap-8">
               {STEPS.map((s) => (
                 <li key={s.n} className="border-t-[3px] border-teal-600 dark:border-teal-400 pt-4">
@@ -132,7 +186,7 @@ export default function LandingPage({ onEnterApp }: LandingPageProps) {
         </section>
 
         {/* What it does */}
-        <section id="what-it-does" className="border-t border-[var(--border-strong)]">
+        <section id="what-it-does" className="border-t border-[var(--border-strong)] bg-[var(--surface-1)]">
           <div className="max-w-5xl mx-auto px-5 py-14">
             <h2 className="font-display text-[28px] mb-8">What it does</h2>
             <dl className="grid md:grid-cols-2 gap-x-12">
@@ -147,7 +201,7 @@ export default function LandingPage({ onEnterApp }: LandingPageProps) {
         </section>
 
         {/* Your data: stated accurately */}
-        <section id="your-data" className="border-t border-[var(--border-strong)] bg-[var(--surface-1)]">
+        <section id="your-data" className="border-t border-[var(--border-strong)]">
           <div className="max-w-5xl mx-auto px-5 py-14 grid md:grid-cols-[0.8fr_1.2fr] gap-8">
             <h2 className="font-display text-[28px]">What happens to what you enter</h2>
             <ul className="space-y-3 text-[16px] text-slate-700 dark:text-slate-300 leading-relaxed">

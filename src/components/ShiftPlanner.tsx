@@ -761,11 +761,24 @@ export default function ShiftPlanner({ settings }: ShiftPlannerProps) {
 
       {/* Header */}
       <div className="fade-up">
-        <h1 className="font-display text-3xl font-semibold text-slate-900 dark:text-slate-100 mb-1">Nursing care plans</h1>
-        <p className="text-sm text-slate-500">
-          Upload each patient's HMS PDF. Predictive flags, evidence-based care plans, and a risk-stratified handover brief — all generated automatically.
+        <p className="text-sm font-bold text-teal-700 dark:text-teal-300 mb-1">Start of shift</p>
+        <h1 className="font-display text-3xl font-semibold text-slate-900 dark:text-slate-100 mb-1">Shift planner</h1>
+        <p className="text-sm text-slate-600">
+          Upload each patient's HMS PDF to get risk flags, a nursing care plan and a handover brief for the ward. All are AI drafts for you to check.
         </p>
       </div>
+
+      {/* First-time explainer: shown until a care plan exists */}
+      {patientsWithPlans.length === 0 && (
+        <section aria-label="How the shift planner works" className="card">
+          <h2 className="font-display text-[18px] mb-3">How it works</h2>
+          <ol className="space-y-3 text-[15px] text-slate-700 dark:text-slate-300">
+            <li className="flex gap-3"><span className="font-bold tabular-nums text-teal-700 dark:text-teal-300">1</span><span><b>Set the shift.</b> Add your shift times, the nurses on duty and the ward patient count for a better plan.</span></li>
+            <li className="flex gap-3"><span className="font-bold tabular-nums text-teal-700 dark:text-teal-300">2</span><span><b>Add each patient.</b> Upload the record saved as a PDF from your hospital system, or type the details.</span></li>
+            <li className="flex gap-3"><span className="font-bold tabular-nums text-teal-700 dark:text-teal-300">3</span><span><b>Generate the care plan.</b> Once a patient has a plan, you can generate a handover brief for the ward.</span></li>
+          </ol>
+        </section>
+      )}
 
       {/* Shift context */}
       <div className="card space-y-4">

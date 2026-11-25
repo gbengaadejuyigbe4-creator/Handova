@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, FileText, ChevronRight, Settings, Info, ClipboardList, History, Moon, Sun, ListChecks, Zap } from "lucide-react";
+import { Plus, FileText, ChevronRight, Settings, Info, Moon, Sun, ListChecks, Zap } from "lucide-react";
 import Logo from "./components/Logo";
 import ShiftHeader from "./components/ShiftHeader";
 import PatientForm from "./components/PatientForm";
@@ -17,6 +17,9 @@ import AboutPanel from "./components/AboutPanel";
 import QuickMode from "./components/QuickMode";
 import ShiftPlanner from "./components/ShiftPlanner";
 import RecordsPage from "./components/RecordsPage";
+import HomeScreen from "./components/HomeScreen";
+import AppNav from "./components/AppNav";
+import { useRoute } from "./hooks/useRoute";
 import { useShiftReport } from "./hooks/useShiftReport";
 import { saveDraft, loadDraft, clearDraft, hasDraft, saveToHistory } from "./utils/storage";
 import { buildFullReport } from "./utils/reportFormatter";
@@ -27,7 +30,11 @@ import type { Patient } from "./types";
 const STEPS_KEYS = ["step1", "step2", "step3"] as const;
 
 export default function App() {
-  const [showLanding, setShowLanding] = useState(true);
+  // The screen comes from the URL hash (#/home, #/planner, #/report, #/records).
+  // No app route in the hash means the landing page.
+  const { route, navigate } = useRoute();
+  const showLanding = route === null;
+  const appPage = route ?? "home";
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
@@ -35,7 +42,6 @@ export default function App() {
   const [showDraftBanner, setShowDraftBanner] = useState(false);
   const [settings, setSettings] = useState<AppSettings>(loadSettings());
   const [appMode, setAppMode] = useState<"quick" | "structured">("structured");
-  const [appPage, setAppPage] = useState<"report" | "planner" | "records">("report");
   const [isDarkMode, setIsDarkMode] = useState(false);
   const historySavedRef = useRef(false);
 
@@ -77,6 +83,23 @@ export default function App() {
     if (hasDraft()) setShowDraftBanner(true);
   }, []);
 
+  // Opening or refreshing straight onto an app screen skips the landing page, where the
+  // draft banner lives. Read the draft once, before anything can overwrite it, and restore it
+  // so a refresh never loses a report in progress.
+  const [initialDraft] = useState(() => (route !== null ? loadDraft() : null));
+  useEffect(() => {
+    if (initialDraft) loadFromDraft(initialDraft.header, initialDraft.patients);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Each screen gets its own title, and a new screen starts at the top.
+  const baseTitle = useRef(document.title);
+  useEffect(() => {
+    const names = { home: "Home", planner: "Shift planner", report: "Handover report", records: "Records" } as const;
+    document.title = route ? `${names[route]} · Handova` : baseTitle.current;
+    if (route !== null) window.scrollTo(0, 0);
+  }, [route]);
+
   // Apply RTL direction to document
   useEffect(() => {
     document.documentElement.setAttribute("dir", dir);
@@ -88,7 +111,7 @@ export default function App() {
     if (!draft) return;
     loadFromDraft(draft.header, draft.patients);
     setShowDraftBanner(false);
-    setShowLanding(false);
+    navigate("report");
   };
 
   const handleDiscardDraft = () => {
@@ -96,15 +119,18 @@ export default function App() {
     setShowDraftBanner(false);
   };
 
-  const handleEnterApp = () => {
-    setShowLanding(false);
+  // Runs when the person arrives on any app screen, whether from the landing page,
+  // a bookmark or a refresh.
+  useEffect(() => {
+    if (showLanding) return;
     if (shouldShowOnboarding()) setShowOnboarding(true);
     // Apply defaults from settings
     setHeader(prev => ({
       ...prev,
       ...(settings.defaultShift && !prev.shift ? { shift: settings.defaultShift as never } : {}),
     }));
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showLanding]);
 
   const handleSettingsChange = (newSettings: AppSettings) => {
     setSettings(newSettings);
@@ -202,7 +228,7 @@ export default function App() {
             </div>
           </div>
         )}
-        <LandingPage onEnterApp={handleEnterApp} />
+        <LandingPage onOpen={navigate} />
         {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} onSettingsChange={handleSettingsChange} lang={lang} />}
         {showAbout && <AboutPanel onClose={() => setShowAbout(false)} lang={lang} />}
       </>
@@ -218,32 +244,14 @@ export default function App() {
       {/* Top bar: flat, full width, separated from the page by a rule */}
       <header className="sticky top-0 z-50 bg-[var(--surface-1)] border-b border-[var(--border-strong)]">
         <div className="max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between gap-2">
-          <button onClick={() => setShowLanding(true)} className="flex items-center gap-2 flex-shrink-0" aria-label="Handova home">
+          <button onClick={() => navigate("home")} className="flex items-center gap-2 flex-shrink-0" aria-label="Handova home">
             <Logo size={28} />
             <span className="font-display text-[18px] text-teal-700 dark:text-teal-300 hidden min-[420px]:inline">Handova</span>
           </button>
 
-          <nav className="flex items-center h-full" aria-label="Main">
-            {([
-              { id: "report", label: "Report", icon: <FileText size={16} /> },
-              { id: "planner", label: "Planner", icon: <ClipboardList size={16} /> },
-              { id: "records", label: "Records", icon: <History size={16} /> },
-            ] as const).map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setAppPage(item.id)}
-                aria-current={appPage === item.id ? "page" : undefined}
-                aria-label={item.label}
-                className={"h-full flex items-center gap-1.5 px-2.5 sm:px-3 text-sm font-bold border-b-[3px] -mb-px " + (appPage === item.id
-                  ? "border-teal-600 text-teal-800 dark:border-teal-400 dark:text-teal-300"
-                  : "border-transparent text-slate-600 hover:text-slate-900 dark:hover:text-white")}
-              >
-                {item.icon}
-                {/* On narrow screens only the current page shows its label, so everything fits */}
-                <span className={appPage === item.id ? "" : "hidden sm:inline"}>{item.label}</span>
-              </button>
-            ))}
-            <span className="w-px h-6 bg-[var(--border-subtle)] mx-1" aria-hidden="true" />
+          <AppNav current={appPage} onNavigate={navigate} placement="top" />
+          <div className="flex items-center h-full">
+            <span className="hidden sm:block w-px h-6 bg-[var(--border-subtle)] mx-1" aria-hidden="true" />
             <button onClick={() => setShowAbout(true)} aria-label="About Handova" className="flex items-center justify-center w-10 h-10 rounded-md text-slate-600 hover:bg-[var(--surface-3)]">
               <Info size={18} />
             </button>
@@ -253,7 +261,7 @@ export default function App() {
             <button onClick={() => setShowSettings(true)} aria-label="Settings" className="flex items-center justify-center w-10 h-10 rounded-md text-slate-600 hover:bg-[var(--surface-3)]">
               <Settings size={18} />
             </button>
-          </nav>
+          </div>
         </div>
       </header>
 
@@ -277,6 +285,9 @@ export default function App() {
       )}
 
       <main className="max-w-4xl mx-auto px-3 sm:px-4 py-6">
+
+        {/* Home */}
+        {appPage === "home" && <HomeScreen onNavigate={navigate} />}
 
         {/* Records page */}
         {appPage === "records" && (
@@ -403,9 +414,12 @@ export default function App() {
         )}
       </main>
 
-      <footer className="text-center py-6 text-xs text-slate-400 border-t border-slate-200 mt-12">
+      <footer className="text-center pt-6 pb-24 sm:pb-6 text-xs text-slate-400 border-t border-slate-200 mt-12">
         Handova v11.1 · AI-Powered Nursing Shift Reports · © 2026
       </footer>
+
+      {/* Phone tab bar: every label visible */}
+      <AppNav current={appPage} onNavigate={navigate} placement="bottom" />
     </div>
   );
 }
