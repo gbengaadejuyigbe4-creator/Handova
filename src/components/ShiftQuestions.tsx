@@ -2,18 +2,18 @@
  * ShiftQuestions.tsx — Handova v11.1
  *
  * Shift Assessment Questions panel.
- * Voice recording uses the EXACT same pipeline as useVoiceInput:
- * - Same MediaRecorder setup with codec detection
- * - Same FormData + /api/transcribe call
- * - Same silence detection auto-stop
- * - Same error handling
+ * Voice recording uses useVoiceInput itself (the one recorder in Handova), so the
+ * recording settings, pause handling, transcription call and notes are shared.
  *
  * Author: Gbenga Adejuyigbe, RN, BNSc
  */
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { Mic, Square, Loader2, BrainCircuit, CheckCircle2 } from "lucide-react";
 import type { ShiftQuestion } from "../types";
+import { useVoiceInput } from "../hooks/useVoiceInput";
+import TranscriptNotes from "./TranscriptNotes";
+import type { SpeechNote } from "../utils/voiceCapture";
 
 interface ShiftQuestionsProps {
   questions: ShiftQuestion[];
@@ -23,12 +23,6 @@ interface ShiftQuestionsProps {
   onRecordingChange: (id: number, isRecording: boolean) => void;
 }
 
-// Silence detection constants — identical to useVoiceInput
-const SILENCE_THRESHOLD = 10;
-const AUTO_STOP_MS = 1500;
-const POLL_INTERVAL_MS = 100;
-const MIN_BLOB_BYTES = 500;
-
 export default function ShiftQuestions({
   questions,
   loading,
@@ -36,177 +30,51 @@ export default function ShiftQuestions({
   onAnswerChange,
   onRecordingChange,
 }: ShiftQuestionsProps) {
-  const [transcribingId, setTranscribingId] = useState<number | null>(null);
-  const [recordingId, setRecordingId] = useState<number | null>(null);
-  const [errorId, setErrorId] = useState<number | null>(null);
-
-  // Refs — one set, reused per question (only one question records at a time)
-  const streamRef = useRef<MediaStream | null>(null);
-  const recorderRef = useRef<MediaRecorder | null>(null);
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const mimeTypeRef = useRef("");
-  const silenceStartRef = useRef<number | null>(null);
-  const didAutoStopRef = useRef(false);
+  // One shared recorder (useVoiceInput). Only one question records at a time, so the question
+  // being answered is remembered here and the recorder's state is read through it.
   const activeIdRef = useRef<number | null>(null);
+  const [activeId, setActiveId] = useState<number | null>(null);
+  const [notesById, setNotesById] = useState<Record<number, SpeechNote[]>>({});
+
+  const voice = useVoiceInput({
+    onTranscript: (text, notes) => {
+      const id = activeIdRef.current;
+      if (id === null) return;
+      onAnswerChange(id, text);
+      setNotesById((prev) => ({ ...prev, [id]: notes }));
+    },
+  });
+
+  const recordingId = voice.listening ? activeId : null;
+  const transcribingId = voice.transcribing ? activeId : null;
+  const errorId = voice.error ? activeId : null;
+
+  // Tell the parent when recording really starts and stops.
+  useEffect(() => {
+    if (activeId !== null) onRecordingChange(activeId, voice.listening);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voice.listening]);
 
   const answeredCount = questions.filter((q) => q.answer.trim().length > 0).length;
 
-  // Tear down mic — identical to useVoiceInput teardown
-  const teardown = useCallback(() => {
-    if (pollTimerRef.current) {
-      clearInterval(pollTimerRef.current);
-      pollTimerRef.current = null;
-    }
-    if (audioCtxRef.current) {
-      audioCtxRef.current.close();
-      audioCtxRef.current = null;
-    }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop());
-      streamRef.current = null;
-    }
-    silenceStartRef.current = null;
-  }, []);
-
-  // Transcribe — identical to useVoiceInput transcribe
-  const transcribe = useCallback(async (id: number, chunks: Blob[], mimeType: string, existingAnswer: string) => {
-    const baseMime = mimeType.split(";")[0] || "audio/webm";
-    const blob = new Blob(chunks, { type: baseMime });
-
-    if (blob.size < MIN_BLOB_BYTES) {
-      setTranscribingId(null);
-      return;
-    }
-
-    setTranscribingId(id);
-    try {
-      const ext = baseMime.includes("mp4") ? "mp4" : "webm";
-      const form = new FormData();
-      form.append("audio", blob, `recording.${ext}`);
-
-      const res = await fetch("/api/transcribe", { method: "POST", body: form });
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.error || "Transcription failed");
-
-      const transcript = (data.text || "").trim();
-      if (transcript) {
-        const prev = existingAnswer.trimEnd();
-        onAnswerChange(id, prev ? prev + " " + transcript : transcript);
-      }
-    } catch {
-      setErrorId(id);
-    } finally {
-      setTranscribingId(null);
-    }
-  }, [onAnswerChange]);
-
-  // Stop recording
-  const stopRecording = useCallback((id: number) => {
-    teardown();
-    setRecordingId(null);
-    onRecordingChange(id, false);
-    activeIdRef.current = null;
-
-    const recorder = recorderRef.current;
-    if (recorder && recorder.state !== "inactive") {
-      recorder.stop(); // onstop fires → transcribe
-    }
-  }, [teardown, onRecordingChange]);
-
-  // Start recording — identical flow to useVoiceInput start
-  const startRecording = useCallback(async (id: number, existingAnswer: string) => {
-    setErrorId(null);
-    chunksRef.current = [];
-    silenceStartRef.current = null;
-    didAutoStopRef.current = false;
-    activeIdRef.current = id;
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000 },
-      });
-      streamRef.current = stream;
-
-      // Codec detection — same as useVoiceInput
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : MediaRecorder.isTypeSupported("audio/webm")
-        ? "audio/webm"
-        : MediaRecorder.isTypeSupported("audio/mp4")
-        ? "audio/mp4"
-        : "";
-      mimeTypeRef.current = mimeType;
-
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-      recorderRef.current = recorder;
-
-      recorder.ondataavailable = e => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-
-      recorder.onstop = () => {
-        const capturedId = activeIdRef.current ?? id;
-        transcribe(capturedId, chunksRef.current, mimeTypeRef.current, existingAnswer);
-        chunksRef.current = [];
-      };
-
-      recorder.start(200);
-
-      // Silence detection — identical to useVoiceInput
-      const audioCtx = new AudioContext();
-      audioCtxRef.current = audioCtx;
-      const source = audioCtx.createMediaStreamSource(stream);
-      const analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 512;
-      source.connect(analyser);
-
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-      pollTimerRef.current = setInterval(() => {
-        analyser.getByteTimeDomainData(dataArray);
-        let sum = 0;
-        for (let i = 0; i < dataArray.length; i++) {
-          const val = (dataArray[i] - 128) / 128;
-          sum += val * val;
-        }
-        const rms = Math.sqrt(sum / dataArray.length) * 255;
-        const isSilent = rms < SILENCE_THRESHOLD;
-        const now = Date.now();
-
-        if (isSilent) {
-          if (silenceStartRef.current === null) {
-            silenceStartRef.current = now;
-          } else if (now - silenceStartRef.current >= AUTO_STOP_MS) {
-            if (!didAutoStopRef.current) {
-              didAutoStopRef.current = true;
-              stopRecording(id);
-            }
-          }
-        } else {
-          silenceStartRef.current = null;
-        }
-      }, POLL_INTERVAL_MS);
-
-      setRecordingId(id);
-      onRecordingChange(id, true);
-
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Microphone access denied";
-      setErrorId(id);
-      console.error("[ShiftQuestions] Mic error:", msg);
-    }
-  }, [stopRecording, transcribe, onRecordingChange]);
+  const clearNotes = (id: number) =>
+    setNotesById((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
 
   const handleMic = useCallback((id: number, existingAnswer: string) => {
-    if (recordingId === id) {
-      stopRecording(id);
-    } else {
-      startRecording(id, existingAnswer);
+    if (voice.listening && activeId === id) {
+      voice.stop();
+      return;
     }
-  }, [recordingId, startRecording, stopRecording]);
+    activeIdRef.current = id;
+    setActiveId(id);
+    clearNotes(id);
+    voice.start(existingAnswer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voice.listening, voice.start, voice.stop, activeId]);
 
   // ── Loading state ──
   if (loading) {
@@ -348,9 +216,12 @@ export default function ShiftQuestions({
               )}
               {hasError && !isRecordingThis && !isTranscribingThis && (
                 <p className="text-[11px] text-red-500 pl-5">
-                  Recording failed — check microphone permissions or type your answer.
+                  {voice.error || "Recording failed — check microphone permissions or type your answer."}
                 </p>
               )}
+              <div className="pl-5">
+                <TranscriptNotes notes={notesById[q.id] ?? []} onDismiss={() => clearNotes(q.id)} />
+              </div>
             </div>
           );
         })}

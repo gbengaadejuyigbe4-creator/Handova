@@ -8,6 +8,9 @@
  */
 
 import { gemini, corsHeaders, getRealIP, isRateLimited } from "./_groq.js";
+import { guard, patientRoute } from "./_auth.js";
+
+const AUTH_POLICY = patientRoute("/api/generate");
 
 export default async function handler(req, res) {
   if (req.method === "OPTIONS") {
@@ -21,6 +24,9 @@ export default async function handler(req, res) {
     res.end(JSON.stringify({ error: "Method not allowed" }));
     return;
   }
+
+  // Sign-in, role and request limit (off until AUTH_ENFORCED=true). Runs before any work or AI call.
+  if (!(await guard(req, res, AUTH_POLICY))) return;
 
   const ip = getRealIP(req);
   if (isRateLimited(ip, 20, 60000)) {

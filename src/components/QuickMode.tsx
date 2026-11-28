@@ -25,6 +25,7 @@ import { generateFromRaw, generateFromChanges } from "../utils/claudeApi";
 import { FORMAT_LABELS, type ReportFormat } from "../utils/reportFormatter";
 import { getRegionConfig } from "../utils/regionConfig";
 import { useVoiceInput } from "../hooks/useVoiceInput";
+import TranscriptNotes from "./TranscriptNotes";
 import { loadHistory } from "../utils/storage";
 import type { AppSettings } from "../utils/settings";
 
@@ -52,13 +53,13 @@ export default function QuickMode({ settings, onSwitchToStructured }: QuickModeP
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // ── Voice input for main textarea ──────────────────────────────────────────
-  const { listening, transcribing, error: voiceError, start: startVoice, stop: stopVoice } = useVoiceInput({
+  const { listening, transcribing, error: voiceError, notes: voiceNotes, clearNotes: clearVoiceNotes, start: startVoice, stop: stopVoice } = useVoiceInput({
     onTranscript: (text) => setRawText(text),
     disabled: isGenerating,
   });
 
   // ── Voice input for "what changed" ─────────────────────────────────────────
-  const { listening: changesListening, transcribing: changesTranscribing, start: startChangesVoice, stop: stopChangesVoice } = useVoiceInput({
+  const { listening: changesListening, transcribing: changesTranscribing, notes: changesNotes, clearNotes: clearChangesNotes, start: startChangesVoice, stop: stopChangesVoice } = useVoiceInput({
     onTranscript: (text) => setChangesText(text),
     disabled: isGenerating,
   });
@@ -292,6 +293,8 @@ export default function QuickMode({ settings, onSwitchToStructured }: QuickModeP
             </p>
           )}
 
+          <TranscriptNotes notes={voiceNotes} onDismiss={clearVoiceNotes} />
+
           {rawText && (
             <div className="bg-white border border-slate-200 rounded-xl p-4">
               <div className="flex items-center justify-between mb-2">
@@ -367,6 +370,7 @@ export default function QuickMode({ settings, onSwitchToStructured }: QuickModeP
                     {changesListening ? "Stop recording" : "Speak changes"}
                     {changesTranscribing && <span className="text-teal-600">Transcribing…</span>}
                   </button>
+                  <TranscriptNotes notes={changesNotes} onDismiss={clearChangesNotes} />
                 </div>
               )}
             </>

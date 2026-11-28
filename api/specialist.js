@@ -12,15 +12,21 @@
 
 import { gemini, extractJson, corsHeaders, getRealIP, isRateLimited } from "./_groq.js";
 import { buildSnapshot, selectLenses, buildPrompt, normalizeSpecialistResult } from "./_specialist.js";
+import { guard, patientRoute } from "./_auth.js";
 
 const send = (res, status, body) => {
   res.writeHead(status, { "Content-Type": "application/json", ...corsHeaders });
   res.end(JSON.stringify(body));
 };
 
+const AUTH_POLICY = patientRoute("/api/specialist");
+
 export default async function handler(req, res) {
   if (req.method === "OPTIONS") { res.writeHead(204, corsHeaders); res.end(); return; }
   if (req.method !== "POST") return send(res, 405, { error: "Method not allowed" });
+
+  // Sign-in, role and request limit (off until AUTH_ENFORCED=true). Runs before any work or AI call.
+  if (!(await guard(req, res, AUTH_POLICY))) return;
 
   if (process.env.ENABLE_SPECIALIST === "false") {
     return send(res, 503, { error: "Specialist perspectives are switched off." });

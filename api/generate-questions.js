@@ -6,6 +6,7 @@
  */
 
 import { gemini, extractJson, corsHeaders, getRealIP, isRateLimited } from "./_groq.js";
+import { guard, patientRoute } from "./_auth.js";
 
 function buildQuestionPrompt(extracted, filteredText) {
   const {
@@ -38,6 +39,8 @@ OUTPUT: Return a JSON array of question strings only. No numbering, no markdown,
 Example: ["question one", "question two", "Is there anything else significant that happened with this patient this shift that has not been covered above?"]`;
 }
 
+const AUTH_POLICY = patientRoute("/api/generate-questions");
+
 export default async function handler(req, res) {
   if (req.method === "OPTIONS") { res.writeHead(204, corsHeaders); res.end(); return; }
   if (req.method !== "POST") {
@@ -45,6 +48,9 @@ export default async function handler(req, res) {
     res.end(JSON.stringify({ error: "Method not allowed" }));
     return;
   }
+
+  // Sign-in, role and request limit (off until AUTH_ENFORCED=true). Runs before any work or AI call.
+  if (!(await guard(req, res, AUTH_POLICY))) return;
 
   const ip = getRealIP(req);
   if (isRateLimited(ip, 10, 60000)) {

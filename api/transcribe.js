@@ -13,6 +13,9 @@
  * Author: Gbenga Adejuyigbe, RN, BNSc
  */
 
+import { guard, patientRoute } from "./_auth.js";
+import { buildListenUrl, pickLanguage, parseDeepgram, processTranscript } from "./_speech.js";
+
 export const config = {
   api: {
     bodyParser: false,
@@ -52,10 +55,12 @@ function isRateLimited(ip) {
 const corsHeaders = {
   "Access-Control-Allow-Origin": process.env.ALLOWED_ORIGIN || "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
 // ─── HANDLER ──────────────────────────────────────────────────────────────────
+
+const AUTH_POLICY = patientRoute("/api/transcribe");
 
 export default async function handler(req, res) {
   if (req.method === "OPTIONS") {
@@ -69,6 +74,9 @@ export default async function handler(req, res) {
     res.end(JSON.stringify({ error: "Method not allowed" }));
     return;
   }
+
+  // Sign-in, role and request limit (off until AUTH_ENFORCED=true). Runs before any work or AI call.
+  if (!(await guard(req, res, AUTH_POLICY))) return;
 
   // Rate limit check
   const ip = getRealIP(req);
@@ -162,9 +170,9 @@ export default async function handler(req, res) {
       return;
     }
 
-    // Send to Deepgram Nova 3 Medical
+    // Send to Deepgram Nova 3 Medical, with the clinical key terms and the language set on the server
     const deepgramRes = await fetch(
-      "https://api.deepgram.com/v1/listen?model=nova-3-medical&language=en&smart_format=true&punctuate=true",
+      buildListenUrl({ language: pickLanguage(process.env) }),
       {
         method: "POST",
         headers: {
@@ -183,11 +191,14 @@ export default async function handler(req, res) {
     }
 
     const data = await deepgramRes.json();
-    const transcript =
-      data?.results?.channels?.[0]?.alternatives?.[0]?.transcript || "";
+    const { transcript, words } = parseDeepgram(data);
+
+    // Clean the transcript (see _speech.js). The raw text is always returned beside the cleaned text,
+    // and "notes" lists everything the nurse should look at. `text` keeps its old meaning.
+    const { text, rawText, notes } = processTranscript({ transcript, words });
 
     res.writeHead(200, { "Content-Type": "application/json", ...corsHeaders });
-    res.end(JSON.stringify({ text: transcript }));
+    res.end(JSON.stringify({ text, rawText, notes }));
 
   } catch (err) {
     console.error("[Handova] Transcription error:", err.message);

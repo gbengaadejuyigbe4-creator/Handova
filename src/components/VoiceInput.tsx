@@ -1,5 +1,6 @@
 import { Mic, Square, Loader2 } from "lucide-react";
 import { useVoiceInput } from "../hooks/useVoiceInput";
+import TranscriptNotes from "./TranscriptNotes";
 
 interface VoiceInputProps {
   onTranscript: (text: string) => void;
@@ -8,11 +9,12 @@ interface VoiceInputProps {
 }
 
 export default function VoiceInput({ onTranscript, existingText = "", disabled = false }: VoiceInputProps) {
-  const { listening, supported, transcribing, error, start, stop } = useVoiceInput({ onTranscript, disabled });
+  const { listening, supported, transcribing, error, notes, clearNotes, start, stop } = useVoiceInput({ onTranscript, disabled });
 
   if (!supported) return null;
 
   return (
+    <div>
     <div className="flex items-center gap-3">
       {!listening && !transcribing ? (
         <button
@@ -47,6 +49,8 @@ export default function VoiceInput({ onTranscript, existingText = "", disabled =
       {error && (
         <span className="text-xs text-red-400">{error}</span>
       )}
+    </div>
+    <TranscriptNotes notes={notes} onDismiss={clearNotes} />
     </div>
   );
 }

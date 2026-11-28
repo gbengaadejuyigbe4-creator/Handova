@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { extractFromEmrPdf } from "../utils/emrExtract";
 import SpecialistSection from "./SpecialistSection";
+import TranscriptNotes from "./TranscriptNotes";
+import { useVoiceInput } from "../hooks/useVoiceInput";
 import { Minus, TrendingDown, TrendingUp } from "lucide-react";
 import { savePlannerEntry, loadPlannerHistory } from "../utils/storage";
 import type { AppSettings } from "../utils/settings";
@@ -215,98 +217,6 @@ function newPatient(): PatientEntry {
     continuityNote: null,
     updateHistory: [],
   };
-}
-
-// ─── VOICE HOOK for nurse queries (same pipeline as useVoiceInput) ─────────────
-
-function useQuickVoice(onTranscript: (t: string) => void) {
-  const [listening, setListening] = useState(false);
-  const [transcribing, setTranscribing] = useState(false);
-  const streamRef = useRef<MediaStream | null>(null);
-  const recorderRef = useRef<MediaRecorder | null>(null);
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const mimeRef = useRef("");
-  const silenceRef = useRef<number | null>(null);
-  const autoStoppedRef = useRef(false);
-
-  const teardown = useCallback(() => {
-    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-    if (audioCtxRef.current) { audioCtxRef.current.close(); audioCtxRef.current = null; }
-    if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
-    silenceRef.current = null;
-  }, []);
-
-  const stop = useCallback(() => {
-    teardown();
-    setListening(false);
-    if (recorderRef.current?.state !== "inactive") recorderRef.current?.stop();
-  }, [teardown]);
-
-  const start = useCallback(async (existing: string) => {
-    chunksRef.current = [];
-    silenceRef.current = null;
-    autoStoppedRef.current = false;
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000 },
-      });
-      streamRef.current = stream;
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm"
-        : MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4" : "";
-      mimeRef.current = mimeType;
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-      recorderRef.current = recorder;
-      recorder.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
-      recorder.onstop = async () => {
-        const baseMime = mimeRef.current.split(";")[0] || "audio/webm";
-        const blob = new Blob(chunksRef.current, { type: baseMime });
-        if (blob.size < 500) return;
-        setTranscribing(true);
-        try {
-          const ext = baseMime.includes("mp4") ? "mp4" : "webm";
-          const form = new FormData();
-          form.append("audio", blob, `recording.${ext}`);
-          const res = await fetch("/api/transcribe", { method: "POST", body: form });
-          const data = await res.json();
-          const transcript = (data.text || "").trim();
-          if (transcript) {
-            const prev = existing.trimEnd();
-            onTranscript(prev ? prev + " " + transcript : transcript);
-          }
-        } catch { /* silent */ }
-        finally { setTranscribing(false); }
-      };
-      recorder.start(200);
-      const audioCtx = new AudioContext();
-      audioCtxRef.current = audioCtx;
-      const source = audioCtx.createMediaStreamSource(stream);
-      const analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 512;
-      source.connect(analyser);
-      const arr = new Uint8Array(analyser.frequencyBinCount);
-      pollRef.current = setInterval(() => {
-        analyser.getByteTimeDomainData(arr);
-        let sum = 0;
-        for (let i = 0; i < arr.length; i++) { const v = (arr[i] - 128) / 128; sum += v * v; }
-        const rms = Math.sqrt(sum / arr.length) * 255;
-        const now = Date.now();
-        if (rms < 10) {
-          if (!silenceRef.current) silenceRef.current = now;
-          else if (now - silenceRef.current >= 1500 && !autoStoppedRef.current) {
-            autoStoppedRef.current = true;
-            stop();
-          }
-        } else { silenceRef.current = null; }
-      }, 100);
-      setListening(true);
-    } catch { /* mic denied */ }
-  }, [stop, onTranscript]);
-
-  return { listening, transcribing, start, stop };
 }
 
 // ─── SUBCOMPONENTS ────────────────────────────────────────────────────────────
@@ -927,10 +837,11 @@ function PatientCard({
   const [midShiftUpdate, setMidShiftUpdate] = useState("");
   const [showUpdateInput, setShowUpdateInput] = useState(false);
   const textFileRef = useRef<HTMLInputElement>(null);
-  const updateVoice = useQuickVoice(text => setMidShiftUpdate(prev => prev ? prev + " " + text : text));
+  // The recorder returns the existing text plus the new words, so the new text replaces the old (adding it again duplicated it).
+  const updateVoice = useVoiceInput({ onTranscript: (text) => setMidShiftUpdate(text) });
 
-  const voice = useQuickVoice(text => {
-    onUpdate(patient.id, { nurseQueries: text });
+  const voice = useVoiceInput({
+    onTranscript: (text) => onUpdate(patient.id, { nurseQueries: text }),
   });
 
   const patientName = patient.extracted?.extracted?.name;
@@ -1203,6 +1114,7 @@ function PatientCard({
                   Recording — pause to auto-stop
                 </p>
               )}
+              {voice.error && <p className="text-xs text-red-500">{voice.error}</p>}
               <textarea
                 value={patient.nurseQueries}
                 onChange={e => onUpdate(patient.id, { nurseQueries: e.target.value })}
@@ -1210,6 +1122,7 @@ function PatientCard({
                 rows={3}
                 className="input-field resize-none"
               />
+              <TranscriptNotes notes={voice.notes} onDismiss={voice.clearNotes} />
             </div>
           )}
 
@@ -1491,6 +1404,8 @@ function PatientCard({
                         )}
                       </button>
                     </div>
+                    {updateVoice.error && <p className="text-xs text-red-500">{updateVoice.error}</p>}
+                    <TranscriptNotes notes={updateVoice.notes} onDismiss={updateVoice.clearNotes} />
 
                     {patient.isUpdatingPlan && (
                       <div className="flex items-center gap-2 py-2">
